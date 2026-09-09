@@ -1,0 +1,172 @@
+<!doctype html>
+<!--@template-doc
+  knowledge-sharing — KB Cut cover template.
+
+  The executable form of frame.md's `Cover Design` section. Filled by
+  $kbcut/scripts/make-cover.cjs and rendered to PNG with `hyperframes snapshot`.
+
+  This is an INDEPENDENT composition. It shares the preset's fonts, colors and
+  brand constraints with template.html, but none of its layout. Never produce a
+  cover by screenshotting a packaged frame.
+
+  Placeholder contract (see frame.md `templates.cover`):
+    {{COVER_TITLE_LINES}}      3 lines of serif title
+    {{COVER_BACKGROUND_SRC}}   clean still extracted by make-cover.cjs
+    {{FONT_COVER_TITLE}} {{LAYOUT_VARS}} {{COMPOSITION_*}} {{DURATION_SECONDS}}
+
+  Composition law: bright and open by default. The title is centered and uses
+  the derived --title-size so it stays as large as the safe area allows.
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width={{COMPOSITION_WIDTH}}, height={{COMPOSITION_HEIGHT}}" />
+    <title>KB Cut — knowledge-sharing cover</title>
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "KnowledgeSerif";
+        src: url("fonts/{{FONT_COVER_TITLE}}");
+        font-weight: 700;
+        font-display: block;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+      }
+
+      #root {
+        {{LAYOUT_VARS}}
+
+        position: relative;
+        width: {{COMPOSITION_WIDTH}}px;
+        height: {{COMPOSITION_HEIGHT}}px;
+        overflow: hidden;
+        container-type: size;
+        font-family: "KnowledgeSerif", serif;
+        letter-spacing: 0;
+      }
+
+      #stage-ground {
+        position: absolute;
+        inset: 0;
+        background: #000000;
+        z-index: 0;
+      }
+
+      .clip {
+        position: absolute;
+      }
+
+      #cover-background {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: var(--cover-anchor-x) var(--cover-anchor-y);
+        transform: scale(var(--cover-scale));
+        transform-origin: var(--cover-anchor-x) var(--cover-anchor-y);
+        z-index: 1;
+      }
+
+      #cover-title {
+        position: absolute;
+        inset: 0;
+        z-index: 100;
+      }
+
+      .cover-title-line {
+        position: absolute;
+        margin: 0;
+        font-weight: 700;
+        font-size: var(--title-size);
+        color: var(--title-color);
+        line-height: var(--title-line-height);
+        text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+      }
+
+      /* 竖屏（3:4 / 4:5 / 9:16）：第一行贴顶、最后一行贴底，80% 宽两端铺满 */
+      @media (orientation: portrait) {
+        #cover-title .cover-title-line:first-child {
+          top: 5%;
+          left: 10%;
+          width: 80%;
+          text-align: justify;
+          text-align-last: justify;
+        }
+        #cover-title .cover-title-line:last-child {
+          bottom: 5%;
+          left: 10%;
+          width: 80%;
+          text-align: justify;
+          text-align-last: justify;
+        }
+      }
+
+      /* 横屏（16:9 / 4:3）：左右分屏，第一行在左半区、第二行在右半区，
+         各自水平居中并在画面上下居中；字号由 make-cover 按文字量动态推导。 */
+      @media (orientation: landscape) {
+        #cover-title .cover-title-line:first-child {
+          top: 50%;
+          transform: translateY(-50%);
+          left: 3%;
+          width: 44%;
+          text-align: center;
+        }
+        #cover-title .cover-title-line:last-child {
+          top: 50%;
+          transform: translateY(-50%);
+          left: 53%;
+          width: 44%;
+          text-align: center;
+        }
+      }
+
+      .title-yellow {
+        color: #8ec5fc;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="{{COMPOSITION_ID}}"
+      data-start="0"
+      data-width="{{COMPOSITION_WIDTH}}"
+      data-height="{{COMPOSITION_HEIGHT}}"
+      data-duration="{{DURATION_SECONDS}}"
+    >
+      <div id="stage-ground"></div>
+
+      <img
+        id="cover-background"
+        class="clip"
+        src="{{COVER_BACKGROUND_SRC}}"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="0"
+        alt=""
+      />
+
+      <div
+        id="cover-title"
+        class="clip"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="1"
+      >
+        {{COVER_TITLE_LINES}}
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.to({ hold: 0 }, { hold: 1, duration: {{DURATION_SECONDS}} }, 0);
+      window.__timelines["{{COMPOSITION_ID}}"] = tl;
+    </script>
+  </body>
+</html>

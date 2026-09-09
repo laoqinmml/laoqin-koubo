@@ -1,0 +1,268 @@
+<!doctype html>
+<!--@template-doc
+  knowledge-sharing — KB Cut HyperFrames packaging template.
+
+  This file is the executable form of frame.md. It is filled by
+  $kbcut/scripts/make-package.cjs and must never be hand-edited per video.
+
+  Placeholder contract
+  --------------------
+  Content placeholders map 1:1 to the `Content Inputs` section of frame.md:
+    {{SPEAKER_NAME}}        plain text
+    {{SPEAKER_CREDENTIALS}} HTML fragment, 2-4 <div class="credential"> lines
+    {{CAPTION_SEGMENTS_JSON}} JSON array; carries caption segments + emphasis
+
+  Reserved technical placeholders (not part of Content Inputs):
+    {{COMPOSITION_ID}} {{COMPOSITION_WIDTH}} {{COMPOSITION_HEIGHT}}
+    {{DURATION_SECONDS}} {{VIDEO_SRC}}
+    {{FONT_BODY_NORMAL}} {{FONT_BODY_BOLD}} {{FONT_COVER_TITLE}}
+    {{LAYOUT_VARS}}         CSS custom properties: crop plan + shot profile
+
+  Layout law
+  ----------
+  Every position resolves through a CSS custom property injected by
+  {{LAYOUT_VARS}}. Per-video adjustment changes those numbers only.
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width={{COMPOSITION_WIDTH}}, height={{COMPOSITION_HEIGHT}}" />
+    <title>KB Cut — knowledge-sharing</title>
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "KnowledgeSerif";
+        src: url("fonts/{{FONT_COVER_TITLE}}");
+        font-weight: 700;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "KnowledgeSans";
+        src: url("fonts/{{FONT_BODY_NORMAL}}");
+        font-weight: 400;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "KnowledgeSans";
+        src: url("fonts/{{FONT_BODY_BOLD}}");
+        font-weight: 700;
+        font-display: block;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+      }
+
+      #root {
+        {{LAYOUT_VARS}}
+
+        position: relative;
+        width: {{COMPOSITION_WIDTH}}px;
+        height: {{COMPOSITION_HEIGHT}}px;
+        overflow: hidden;
+        container-type: size;
+        font-family: "KnowledgeSans", sans-serif;
+        font-kerning: none;
+        letter-spacing: 0;
+      }
+
+      #stage-ground {
+        position: absolute;
+        inset: 0;
+        background: #000000;
+        z-index: 0;
+      }
+
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* Layer 0: footage. Crop is object-fit/object-position only, no filter. */
+      #footage {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: var(--video-anchor-x) var(--video-anchor-y);
+        transform: scale(var(--video-scale));
+        transform-origin: var(--video-anchor-x) var(--video-anchor-y);
+        z-index: 1;
+      }
+
+      /* IP 介绍：左侧垂直居中，配半透明黑底卡片。 */
+      #ip-panel {
+        position: absolute;
+        left: var(--safe-x);
+        top: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 150;
+      }
+
+      #ip-card {
+        max-width: 38cqw;
+        background: rgba(0, 0, 0, 0.45);
+        border-radius: 0.6cqw;
+        padding: 1.4cqh 1.8cqw;
+      }
+
+      #speaker-name {
+        font-size: var(--speaker-name-size);
+        font-weight: 700;
+        color: #ffffff;
+        line-height: 1.1;
+      }
+
+      .credential {
+        font-size: var(--speaker-detail-size);
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.86);
+        line-height: 1.18;
+      }
+
+      /* Layer 3: live captions, anchored at the bottom edge. */
+      #captions-container {
+        position: absolute;
+        left: 50%;
+        margin-left: calc(var(--caption-max-width) / -2);
+        width: var(--caption-max-width);
+        top: var(--caption-zone-top);
+        height: calc(var(--caption-zone-bottom) - var(--caption-zone-top));
+        z-index: 200;
+      }
+
+      #captions-container,
+      #captions-container .caption-line {
+        font-family: "KnowledgeSans", sans-serif;
+      }
+
+      .caption {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        text-align: center;
+        visibility: hidden;
+        opacity: 0;
+      }
+
+      .caption-line {
+        display: inline-block;
+        font-size: var(--caption-size);
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.2;
+        background: rgba(0, 0, 0, 0.45);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        padding: 0.08em 0.45em;
+        border-radius: 0.14em;
+      }
+
+      .chunk {
+        display: inline;
+        visibility: visible;
+        opacity: 1;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="{{COMPOSITION_ID}}"
+      data-start="0"
+      data-width="{{COMPOSITION_WIDTH}}"
+      data-height="{{COMPOSITION_HEIGHT}}"
+      data-duration="{{DURATION_SECONDS}}"
+    >
+      <div id="stage-ground"></div>
+
+      <video
+        id="footage"
+        class="clip"
+        src="{{VIDEO_SRC}}"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="0"
+        muted
+        playsinline
+      ></video>
+
+      <audio
+        id="footage-audio"
+        src="{{VIDEO_SRC}}"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="overlay"
+        class="clip"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="1"
+      >
+        <div id="ip-panel">
+          <div id="ip-card">
+            <div id="speaker-name">{{SPEAKER_NAME}}</div>
+            <div id="speaker-details">{{SPEAKER_CREDENTIALS}}</div>
+          </div>
+        </div>
+
+        <div id="captions-container"></div>
+      </div>
+    </div>
+
+    <script>
+      const captionSegments = {{CAPTION_SEGMENTS_JSON}};
+
+      const captionsContainer = document.getElementById("captions-container");
+
+      captionSegments.forEach((segment, index) => {
+        const caption = document.createElement("div");
+        caption.className = "caption";
+        caption.id = "caption-" + index;
+
+        segment.lines.forEach((line) => {
+          const lineEl = document.createElement("div");
+          lineEl.className = "caption-line";
+          lineEl.setAttribute("data-layout-allow-overlap", "");
+          line.forEach((chunk) => {
+            const span = document.createElement("span");
+            span.className = "chunk";
+            span.textContent = chunk.text;
+            lineEl.appendChild(span);
+          });
+          caption.appendChild(lineEl);
+        });
+
+        captionsContainer.appendChild(caption);
+      });
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      tl.fromTo(
+        "#ip-card",
+        { autoAlpha: 0, y: 6 },
+        { autoAlpha: 1, y: 0, duration: 0.3, ease: "power2.out" },
+        0.14,
+      );
+
+      captionSegments.forEach((segment, index) => {
+        const caption = document.getElementById("caption-" + index);
+        tl.set(caption, { autoAlpha: 1 }, segment.start);
+        tl.set(caption, { autoAlpha: 0 }, segment.end);
+      });
+
+      window.__timelines["{{COMPOSITION_ID}}"] = tl;
+    </script>
+  </body>
+</html>
