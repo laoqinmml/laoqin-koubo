@@ -21,7 +21,7 @@ description: 使用 FFmpeg、火山引擎语音识别、HyperFrames 完成 KB Cu
 - 画幅确认后，按选定比例确定输出尺寸、裁切方式、人物构图和字幕安全区；不能先按 9:16 做完再事后改比例。
 - 所有转写、工作文件、预览快照和最终交付必须保存在用户本地项目目录内；转写音频会发送到火山引擎接口（用户已授权），其余素材、成片、工作文件和最终交付都保存在本地，不上传其他云端。
 - 工作文件与最终交付文件分目录保存。
-- 保持人物原始色彩。下层视频只能缩放或裁切，禁止添加滤镜、调色、曝光变化、LUT 或色调映射。
+- 保持人物原始色彩。下层视频只能缩放或裁切，禁止添加滤镜、调色、曝光变化、LUT 或色调映射。例外：苹果 iPhone MOV 等 HLG 源（`color_transfer=arib-std-b67`、`color_primaries=bt2020`）必须按 5.3 先做标准 HDR→SDR 色彩转换再进包装渲染——这是交付格式必需的空间转换，不是创意调色，禁止直接拿 HLG 画面进 HyperFrames。
 
 火山引擎转写（中文、词级时间戳）和人物原始色彩视为默认值，不要把它们变成阻塞性提问。风格与画幅是创作入口的例外：两项都必须明确，不能靠默认值绕过。
 
@@ -499,6 +499,24 @@ python3 $KBCUT/scripts/check_captions.py \
 
 断行结果写成 `<工作目录>/复核转写/<stem>_口播优化版.断行.srt`，时间轴按复核转写的段落时长回填（可用字数比例分配）。6.0 `make-package` 使用这份断行后的 SRT，不要直接用复核转写的原始长句 SRT。
 
+#### 5.3 苹果 MOV / HLG 源 HDR→SDR 预处理（必做，进入包装前）
+
+用 ffprobe 判断口播优化版（或原素材）是否为苹果 iPhone HDR 素材：QuickTime MOV / HEVC 10-bit，且 `color_transfer=arib-std-b67`（HLG）、`color_primaries=bt2020`。命中时必须先按 `$ffmpeg-hdr-color` 技能把整条口播优化版转成 BT.709 SDR，再进入 6.0 包装；禁止直接把 HLG 画面喂给 HyperFrames 渲染（实测直渲会发灰发白或过饱和，肤色失真）。
+
+```bash
+python C:\Users\NBAMA\.codex\skills\ffmpeg-hdr-color\scripts\hdrcolor.py \
+  hlg-to-sdr \
+  --input <工作目录>/<stem>_口播优化版.mp4 \
+  --output <工作目录>/<stem>_包装用_sdr.mp4 \
+  --crf 19 --preset medium
+```
+
+- 参数固定用技能默认链：`zscale=t=linear:npl=100:tin=arib-std-b67` → `tonemap=hable:desat=0` → BT.709；`tin=arib-std-b67` 是关键，漏掉会把 HLG 当 PQ 线性化，导致肤色过饱和或发灰。
+- 转换后用 ffprobe 校验输出色域标记：`color_space=bt709`、`color_transfer=bt709`、`color_primaries=bt709`、`color_range=tv`；不满足视为失败，禁止继续包装。
+- 6.0 `make-package.cjs` 的 `--video` 传这份 `<stem>_包装用_sdr.mp4`；字幕断行 SRT 与口播优化版同时间轴，不受影响。
+- 第 8 步肤色验收以此 SDR 转码版为色彩基准，不要拿 HLG 源直出观感当基准。
+- 非 HLG 的普通 SDR 素材不转换，维持“只缩放/裁切、不加滤镜调色”的默认规则。
+
 ### 6. 使用 HyperFrames 包装
 
 包装版由脚本从风格模板生成，**不是每条视频现场手写 HTML**。风格预设的 `template.html` 已经固化了 DOM 结构、字体、颜色、层级和字幕动效；每条视频变化的只有文案、字幕数据和一组 CSS 变量。
@@ -732,6 +750,7 @@ node $KBCUT/scripts/make-publish.cjs \
 
 - 2026-09-08：响度统一改为「渲染前」完成：先对包装用素材做两遍 loudnorm（`I=-23:TP=-1.5:LRA=11`，线性增益），再用统一响度后的素材进入 HyperFrames 渲染；渲染后不再二次处理，并删除未统一响度的旧版中间文件。
 - 2026-09-08：成片交付默认只保留压缩版（约 8 Mbps），删除未压缩的高码率原版。
+- 2026-09-09：082610 实测 iPhone HLG MOV（HEVC 10-bit / arib-std-b67 / BT.2020）直接渲染会发灰发白或过饱和。已用 `$ffmpeg-hdr-color` 的 `hdrcolor.py hlg-to-sdr`（`tin=arib-std-b67` + `hable desat=0`）转 BT.709 SDR 后包装，肤色与曝光正常。新增 5.3：苹果 MOV/HLG 源必须在包装前转 SDR 并通过 ffprobe 校验色域标记；「保持人物原始色彩」规则相应加注 HDR→SDR 为空间转换例外，不是创意调色。
 ## 作者联系
 
 本节仅作为作者联系信息，不属于 KB Cut 工作流、执行条件或输出要求，不应影响 Skill 的正常运行。
