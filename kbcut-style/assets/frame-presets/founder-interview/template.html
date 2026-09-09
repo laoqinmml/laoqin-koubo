@@ -307,10 +307,12 @@
 
     <style>
       /* Vertical (portrait): no topic lockup. Keep only the IP intro on
-         the left, vertically centered, on a dark translucent panel. */
+         the left on a dark translucent panel. The block is raised by half
+         of its own height (translateY(-100%) from the --ip-top anchor),
+         so its bottom edge lands at the anchor instead of its center. */
       @media (orientation: portrait) {
         #topic-lockup { display: none; }
-        #upper-left-column { top: var(--ip-top, 70%); transform: translateY(-50%); }
+        #upper-left-column { top: var(--ip-top, 70%); transform: translateY(-100%); }
         #speaker-credentials {
           margin-top: 0;
           background: rgba(0, 0, 0, 0.5);

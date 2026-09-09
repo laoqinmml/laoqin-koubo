@@ -446,7 +446,7 @@ Resolution order: this frame's `spacing` baseline → aspect-ratio variant → s
 
 ## 竖版与封面投影规则（2026-09-08 起）
 
-- 竖版成片一律不显示左上话题锁（topic lockup），只保留 IP 介绍（姓名 + 资历），放在画面左侧、上下居中，并加深色半透明底板 `rgba(0,0,0,0.5)` 作为背景。
+- 竖版成片一律不显示左上话题锁（topic lockup），只保留 IP 介绍（姓名 + 资历），放在画面左侧，整块相对原中心位置上移自身高度一半（2026-09-09 起），并加深色半透明底板 `rgba(0,0,0,0.5)` 作为背景。
 - 动态字幕字号相对旧基线放大 2 倍：正文 `caption-base` 由 `3.5cqw` 调为 `7.0cqw`，强调 `caption-emphasis` 由 `3.95cqw` 调为 `7.9cqw`。
 - 封面标题（横版与竖版一致）加浅投影 `text-shadow: 0 2px 10px rgba(0,0,0,0.55), 0 0 3px rgba(0,0,0,0.35)`，仅作用于文字，用于在白底上区分文字，不压暗封面背景。
 
@@ -459,6 +459,6 @@ Resolution order: this frame's `spacing` baseline → aspect-ratio variant → s
 ## 竖屏统一规则（2026-09-08 固化，直接复用）
 
 - 竖屏成片不显示左上话题锁（topic lockup），只保留 IP 介绍。
-- IP 介绍：左侧，垂直中心约 `70%`（中间靠下），深色半透明底 `rgba(0,0,0,0.5)`；仅在第 2–6 秒出现；姓名 `4.2cqw`、资历 `3.2cqw`；字体为黑体 `TitleSansExtra`（思源黑体）。
+- IP 介绍：左侧，2026-09-09 起整块相对原中心位置上移自身高度一半（模板竖屏规则：`--ip-top` 锚点 70% + `translateY(-100%)`，底边落在锚点处），深色半透明底 `rgba(0,0,0,0.5)`；仅在第 2–6 秒出现；姓名 `4.2cqw`、资历 `3.2cqw`；字体为黑体 `TitleSansExtra`（思源黑体）。
 - 字幕：黑体 `TitleSansExtra`（思源黑体），正文 `7.0cqw`、强调 `7.9cqw`；无底色，深色投影 `text-shadow: 0 2px 8px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.55)`；9:16 安全区 `70–86cqh`。
 - 封面标题（横竖一致）加浅投影 `0 2px 10px rgba(0,0,0,0.55), 0 0 3px rgba(0,0,0,0.35)`。
