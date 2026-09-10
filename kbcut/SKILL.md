@@ -497,7 +497,25 @@ python3 $KBCUT/scripts/check_captions.py \
 - 字幕文本去掉中英文标点（保留 `GPT-4` 这类英文连字符）；中英/中数之间不加空格，英文单词之间保留空格。
 - 超长绝不删词来缩短，换断点或加行。
 
-断行结果写成 `<工作目录>/复核转写/<stem>_口播优化版.断行.srt`，时间轴按复核转写的段落时长回填（可用字数比例分配）。6.0 `make-package` 使用这份断行后的 SRT，不要直接用复核转写的原始长句 SRT。
+断行结果写成纯文本、一行一条字幕的 `<工作目录>/复核转写/<stem>_口播优化版.断行.txt`（空行忽略，不再要求与转写段落数一一对应），再按 5.2.1 用词级时间戳生成 `<工作目录>/复核转写/<stem>_口播优化版.semantic.srt`。6.0 `make-package` 使用这份 semantic SRT，不要直接用复核转写的原始长句 SRT。
+
+#### 5.2.1 字幕时间轴对齐与二次纠错（必做，进入包装前）
+
+**禁止用「按段落时长、按字数比例分摊」估算字幕时间**——实测会出现字幕出现时间和开口时间对不上（话说出来了字幕还没出现，或下一句已经开始、字幕还停着）。
+
+必须用复核转写的**词级时间戳**（`transcribe_local.py` 生成的 `.words.tsv`，不要删）做对齐：
+
+```bash
+python $KBCUT/scripts/make_timed_srt_words.py \
+  <工作目录>/复核转写/<stem>_口播优化版.words.tsv \
+  <工作目录>/复核转写/<stem>_口播优化版.断行.txt \
+  <工作目录>/复核转写/<stem>_口播优化版.semantic.srt
+```
+
+- 每行字幕的开始时间 = 该行第一个字实际发音的 `start`（再提前 0.06s），结束时间 = 最后一个字发音的 `end`（再延后 0.10s）；用短窗口近邻对齐，ASR 多出来的语气词最多跳 2 个词。
+- **对齐后必须做二次纠错**：逐行对照词级时间戳与转写原文，核对听写错误（专名、术语、同音字，如 老辛→老秦、模改→魔改、BPS→VPS、老的被别人版本→老版本），发现错字改断行文本后重跑。
+- 同时核对有没有整行错位：字幕出现时间与口型/声音偏差持续超过 0.3s 视为失败，需要修断行文本或检查词级时间戳。
+- 生成后仍要跑 `check_captions.py` 做文本自检；两者都过才能进 6.0。
 
 #### 5.3 苹果 MOV / HLG 源 HDR→SDR 预处理（必做，进入包装前）
 
@@ -708,6 +726,7 @@ node $KBCUT/scripts/make-publish.cjs \
 - `scripts/make-package.cjs`：由风格的 `template.html` 生成完整的 HyperFrames 包装项目。
 - `scripts/make-cover.cjs`：由风格的 `cover.html` 生成封面组合并输出 PNG。
 - `scripts/make-publish.cjs`：由成片 SRT 与 `input_choices` 生成发布物料，并导出本地 dbs 文稿底稿。
+- `scripts/make_timed_srt_words.py`：用词级时间戳把断行文本对齐成字幕 SRT（替代按字数比例分摊）。
 - `scripts/lib/common.cjs`：两个生成器共用的契约校验、布局级联、字体复制与占位符填充。
 - `scripts/lib/frame_md.cjs`：`frame.md` frontmatter 读取与占位符收集，无第三方依赖。
 - `scripts/lib/captions.cjs`：SRT 解析、中文断行、显现分块与关键词强调。
