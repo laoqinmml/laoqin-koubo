@@ -22,6 +22,19 @@
 
 最终以 `yxer accounts list` 返回的账号组名为准。
 
+## 发布结果检查与提醒（2026-09-09 确认）
+
+- 正式 `publish` 拿到任务 ID 后，必须用 `yxer query records` / `yxer query details <task_set_id>` 回查任务状态，不能只看 CLI 提交成功。
+- 全部成功：✅ 汇报平台 + 账号 + 任务 ID，并在 `processed.json` 标记 `published`。
+- 任一失败：用 ❌️ 逐条提醒用户，写明平台、账号、`errorMessage`（如“违反社区规范禁止发笔记”= 账号被平台限制，需用户去平台侧处理）、任务 ID；失败任务不标已发布、不静默重试。
+- 平台侧失败即使本地校验/dry-run 都通过，也必须如实以 ❌️ 上报，不能把“任务已创建”当成“发布成功”。
+
+## 渲染前预览门与色彩（2026-09-09 确认）
+
+- 每条包装工程生成后、整片渲染前，必须先用 `hyperframes snapshot` 抽带字幕的效果帧（开头 3s、中段、末段），发给用户确认颜色与字幕；用户确认后才进入整片渲染。
+- iPhone 等 HDR/HLG（BT.2020、arib-std-b67）素材，必须先用 ffmpeg 转成 SDR（BT.709、yuv420p）再进 make-package，禁止直接把 HDR 素材交给渲染，否则成片会发灰发白。
+- 竖屏判断以 ffprobe 的显示方向为准（含旋转元数据的 1920×1080 源流按 1080×1920 处理为 9:16），不能只看流宽高。
+
 ## KB Cut 默认参数
 
 - 风格：founder-interview。
@@ -45,7 +58,7 @@
 - 断行是 AI 语义处理，不能用纯字符/词级切分代替；由编排 agent 逐条口播稿处理，再按转写段落回填时间轴。
 - 字幕不做关键词黄色高亮：`caption_emphasis` 填 `["__none__"]` 关闭自动提取。
 - IP 介绍：横屏整段常驻；竖屏只在 2–6 秒出现（founder 模板已按画幅条件实现）。
-- 封面默认出 16:9 与 3:4 两版；账号子文件夹提供单独人像照片时，改用 gpt-image-2 图生图封面。
+- 封面默认出 16:9 与 3:4 两版；账号子文件夹提供单独人像照片时，3:4 改用 gpt-image-2 图生图（提示词模板 `cover-prompt-photography.md`，标题取该视频），16:9 仍用抽帧 + 标题模板。
 
 ## 个人 IP（创始人风格固定使用）
 
@@ -58,13 +71,27 @@
 - 输出：小红书标题 + 小红书正文文案。
 - 用途：作为小红书平台发布物料，覆盖 kbcut 默认小红书文案；抖音、视频号、B 站、快手等其他平台继续用 kbcut 的标题 / 简介 / Tags。
 
-## 生图封面
+## 生图封面（2026-09-10 已验证）
 
-- Base URL：`https://jojocode.com`
-- 模型：`gpt-image-2`
-- 方式：图生图，把人物照片作为输入参考。
-- 密钥：环境变量 `JOJOCODE_API_KEY`，从编排目录 `.env` 读取。
-- 首次使用前先做一次最小请求，验证接口路径与参数格式。
+- 适用范围：账号子文件夹提供单独人像照片时，**只用于 3:4 封面**；16:9 封面继续用 KB Cut 抽帧 + 标题模板，不调用生图。
+- Base URL：`https://jojocode.com`（`.env` 的 `JOJOCODE_BASE_URL`）。
+- 模型：`gpt-image-2`（`.env` 的 `JOJOCODE_MODEL`）。
+- 接口：`POST {BASE_URL}/v1/images/edits`，multipart 图生图；可用 `GET /v1/models` 自检。
+- 鉴权：`Authorization: Bearer $JOJOCODE_API_KEY`，密钥只从编排目录 `.env` 读取，不回显、不提交。
+- 提示词模板：[cover-prompt-photography.md](cover-prompt-photography.md)。标题两行替换为该视频自己的封面标题（如 082610 用「八年设计 / 转外贸」），字数标注同步改成实际字数，其余逐字保留。
+- 参数：`size=1080x1440`（接口返回 1088x1440，交付前用 ffmpeg 缩到 1080x1440）、`quality=high`、`input_fidelity=high`、`n=1`。
+- 调用方式：Windows 用系统 `curl.exe`（Python urllib 会因证书链报 `CERTIFICATE_VERIFY_FAILED`）；提示词用 UTF-8 文件传参 `-F "prompt=<prompt.txt"`，避免命令行编码问题：
+
+```powershell
+curl.exe -sS -X POST "$base/v1/images/edits" `
+  -H "Authorization: Bearer $key" `
+  -F "model=$model" -F "prompt=<$promptFile" `
+  -F "size=1080x1440" -F "quality=high" -F "input_fidelity=high" `
+  -F "image=@$photo;type=image/png" -o result.json
+```
+
+- 生成图已含标题文字，直接作为 3:4 封面交付；不要再叠加封面模板标题。
+- 2026-09-10 验证记录：`GET /v1/models` 返回 `gpt-image-2` 与 `gpt-image-2-4k`；`/v1/images/edits` 接受 `size=1080x1440`、`quality=high`、`input_fidelity=high`。
 
 ## 定时排期（非整点，优先流量时段，间隔尽量拉开）
 
