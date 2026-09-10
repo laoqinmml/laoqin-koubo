@@ -63,6 +63,12 @@
 - IP 介绍：横屏整段常驻；竖屏只在 2–6 秒出现（founder 模板已按画幅条件实现）。
 - 封面默认出 16:9 与 3:4 两版；账号子文件夹提供单独人像照片时，3:4 改用 gpt-image-2 图生图（提示词模板 `cover-prompt-photography.md`，标题取该视频），16:9 仍用抽帧 + 标题模板。
 
+## 横屏字号（2026-09-10 修正）
+
+- 横屏（16:9）工程的 `layout_overrides` 固定为 `{"--title-size": "2.8cqw", "--caption-size": "2.8cqw"}`；IP 介绍（speaker）字号用 frame.md 的横屏默认值 `2.35cqw` / `1.79cqw`，不要覆盖。
+- 禁止把竖屏覆盖值（`--ip-top`、`--speaker-name-size 4.2cqw`、`--speaker-detail-size 3.2cqw`、`--caption-zone-top/bottom 60/76cqh`）套到横屏工程：实测会让横屏字幕和 IP 介绍显著偏大，与既有横屏成片不一致。
+- 横屏封面沿用既有工程参数；封面标题字号由 make-cover 按标题字数自动推导，不要手写 `--title-size` 覆盖。
+
 ## 个人 IP（创始人风格固定使用）
 
 - 名称：老秦
