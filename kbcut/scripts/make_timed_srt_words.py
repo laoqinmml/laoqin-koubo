@@ -21,7 +21,7 @@ NUM_MAP = {
     "５": "五", "６": "六", "７": "七", "８": "八", "９": "九",
 }
 
-WINDOW = 6
+WINDOW = 8
 START_PAD = 0.06
 END_PAD = 0.10
 MIN_GAP = 0.02
@@ -61,6 +61,26 @@ def load_words(path: str):
     return words
 
 
+def build_char_stream(words):
+    """Expand ASR tokens into a per-character stream with interpolated times.
+
+    ASR may emit "WordPress" as one token or as "w p" letters; expanding to
+    characters keeps the alignment in lockstep for latin words and digits.
+    """
+    stream = []
+    for start, end, token in words:
+        chars = [c for c in token if not c.isspace()]
+        count = len(chars)
+        if count == 0:
+            continue
+        span = max(0.0, end - start)
+        for idx, ch in enumerate(chars):
+            cs = start + span * idx / count
+            ce = start + span * (idx + 1) / count
+            stream.append((norm_char(ch), cs, ce))
+    return stream
+
+
 def load_lines(path: str):
     lines = []
     with open(path, encoding="utf-8") as fh:
@@ -71,19 +91,18 @@ def load_lines(path: str):
     return lines
 
 
-def align_line(words, text, cursor):
+def align_line(stream, text, cursor):
     chars = [c for c in text if not c.isspace()]
-    cursor = min(cursor, len(words))
+    cursor = min(cursor, len(stream))
     first_time = None
     last_time = None
     i = cursor
 
     def find_match(start, target):
-        limit = min(len(words), start + WINDOW)
+        limit = min(len(stream), start + WINDOW)
         j = start
         while j < limit:
-            token = norm_token(words[j][2])
-            if token and (token == target or target in token):
+            if stream[j][0] == target:
                 return j
             j += 1
         return None
@@ -92,21 +111,21 @@ def align_line(words, text, cursor):
         target = norm_char(ch)
         found = find_match(i, target)
         if found is None:
-            # ASR used an extra filler token; skip up to 2 tokens and retry
+            # ASR emitted extra filler characters; skip a few and retry
             skipped = 0
             probe = i
-            while found is None and skipped < 2 and probe < len(words):
+            while found is None and skipped < 4 and probe < len(stream):
                 probe += 1
                 skipped += 1
                 found = find_match(probe, target)
             if found is None:
-                # substitution (e.g. 老秦 vs ASR 老辛): anchor on current word
-                if i >= len(words):
+                # substitution (e.g. 老秦 vs ASR 老辛): anchor on current char
+                if i >= len(stream):
                     break
                 found = i
         if first_time is None:
-            first_time = words[found][0]
-        last_time = words[found][1]
+            first_time = stream[found][1]
+        last_time = stream[found][2]
         i = found + 1
     if first_time is None:
         return None
@@ -127,13 +146,14 @@ def main() -> int:
         print(__doc__)
         return 2
     words = load_words(sys.argv[1])
+    stream = build_char_stream(words)
     lines = load_lines(sys.argv[2])
     out_path = sys.argv[3]
 
     cues = []
     cursor = 0
     for text in lines:
-        aligned = align_line(words, text, cursor)
+        aligned = align_line(stream, text, cursor)
         if aligned is None:
             continue
         start, end, cursor = aligned
