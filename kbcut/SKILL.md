@@ -499,23 +499,28 @@ python3 $KBCUT/scripts/check_captions.py \
 
 断行结果写成纯文本、一行一条字幕的 `<工作目录>/复核转写/<stem>_口播优化版.断行.txt`（空行忽略，不再要求与转写段落数一一对应），再按 5.2.1 用词级时间戳生成 `<工作目录>/复核转写/<stem>_口播优化版.semantic.srt`。6.0 `make-package` 使用这份 semantic SRT，不要直接用复核转写的原始长句 SRT。
 
-#### 5.2.1 字幕时间轴对齐与二次纠错（必做，进入包装前）
+#### 5.2.1 字幕生成：逐词稿全量覆盖 + 词边界断行 + 词级对时（必做，进入包装前）
 
-**禁止用「按段落时长、按字数比例分摊」估算字幕时间**——实测会出现字幕出现时间和开口时间对不上（话说出来了字幕还没出现，或下一句已经开始、字幕还停着）。
+**首选做法（不要手写压缩断行）**：字幕直接由复核转写的逐词稿生成——只去掉纯语气词（呃/啊/嗯/哦/唔/诶/唉/哟），其余一字不省；用 jieba 分词保证只在词边界断行（每行 ≤17 字，优先在 ASR 句子边界、其次在停顿 ≥0.4s 处断）；每行时间直接取该行第一个字到最后一个字的词级时间戳（开始提前 0.06s、结束延后 0.10s）。
 
-必须用复核转写的**词级时间戳**（`transcribe_local.py` 生成的 `.words.tsv`，不要删）做对齐：
+依赖：`pip install jieba`（一次性）。
 
 ```bash
-python $KBCUT/scripts/make_timed_srt_words.py \
+python $KBCUT/scripts/make_captions_from_asr.py \
   <工作目录>/复核转写/<stem>_口播优化版.words.tsv \
+  <工作目录>/复核转写/<stem>_口播优化版.txt \
   <工作目录>/复核转写/<stem>_口播优化版.断行.txt \
-  <工作目录>/复核转写/<stem>_口播优化版.semantic.srt
+  <工作目录>/复核转写/<stem>_口播优化版.semantic.srt \
+  [replacements.json]
 ```
 
-- 每行字幕的开始时间 = 该行第一个字实际发音的 `start`（再提前 0.06s），结束时间 = 最后一个字发音的 `end`（再延后 0.10s）；用短窗口近邻对齐，ASR 多出来的语气词最多跳 2 个词。
-- **对齐后必须做二次纠错**：逐行对照词级时间戳与转写原文，核对听写错误（专名、术语、同音字，如 老辛→老秦、模改→魔改、BPS→VPS、老的被别人版本→老版本），发现错字改断行文本后重跑。
-- 同时核对有没有整行错位：字幕出现时间与口型/声音偏差持续超过 0.3s 视为失败，需要修断行文本或检查词级时间戳。
-- 生成后仍要跑 `check_captions.py` 做文本自检；两者都过才能进 6.0。
+- 实测教训一：ASR 会把 `WordPress`、`Webflow` 这类英文当一个 token；如果按字符逐个去消耗词（或手写断行时压缩文字），匹配会整体漂移 0.5–1s，而且越到后面越偏。字幕必须全量覆盖语音内容。
+- 实测教训二：禁止用「按段落时长、按字数比例分摊」估算时间；也禁止手写压缩断行（会漏字并导致错位）。只有用户明确要求精简文案时才手写，且必须全量覆盖。
+- `replacements.json` 固定替换听写错误，只做同长替换、不改时间轴。常用：`wp/wps/WPa→WP`、`vps→VPS`、`ok→OK`、`shopee→Shopee`、`webflow→Webflow`、`老辛/老金→老秦`、`模改→魔改`、`sars/saas→SaaS`、`外貌→外贸`、`建筑公司→建站公司`。
+- 生成后跑 `check_captions.py`；并核对字幕开始时间是否落在 >0.4s 的静音段里（正常应接近 0 条）。两者都过才能进 6.0。
+- `..._断行.txt` 是用逐词稿生成的产出物，供人工复核文本；不要靠手工改它的行数来对时间。
+
+如果需要沿用已有的手写断行文本，也可以用 `scripts/make_timed_srt_words.py`（字符流对齐）把断行文本对齐到词级时间戳，但它不保证全量覆盖，只适合断行文本与语音逐字一致的场景。
 
 #### 5.3 苹果 MOV / HLG 源 HDR→SDR 预处理（必做，进入包装前）
 
@@ -727,6 +732,7 @@ node $KBCUT/scripts/make-publish.cjs \
 - `scripts/make-cover.cjs`：由风格的 `cover.html` 生成封面组合并输出 PNG。
 - `scripts/make-publish.cjs`：由成片 SRT 与 `input_choices` 生成发布物料，并导出本地 dbs 文稿底稿。
 - `scripts/make_timed_srt_words.py`：用词级时间戳把断行文本对齐成字幕 SRT（替代按字数比例分摊）。
+- `scripts/make_captions_from_asr.py`：由逐词稿全量生成字幕（去语气词 + jieba 词边界断行 + 词级时间戳），首选做法。
 - `scripts/lib/common.cjs`：两个生成器共用的契约校验、布局级联、字体复制与占位符填充。
 - `scripts/lib/frame_md.cjs`：`frame.md` frontmatter 读取与占位符收集，无第三方依赖。
 - `scripts/lib/captions.cjs`：SRT 解析、中文断行、显现分块与关键词强调。
