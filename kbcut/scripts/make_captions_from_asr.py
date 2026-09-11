@@ -2,7 +2,11 @@
 """Build full-coverage captions directly from the ASR word stream.
 
 Usage:
-  python make_captions_from_asr.py <words.tsv> <asr_segments.txt> <out_lines.txt> <out.srt> [replacements.json]
+  python make_captions_from_asr.py <words.tsv> <asr_segments.txt> <out_lines.txt> <out.srt> [replacements.json] [--max-chars N] [--pause-break S]
+
+--max-chars must match the current style/aspect caption budget (the
+"每行上限 N 字" printed by make-package.cjs), e.g. founder-interview 9:16 ~13,
+founder-interview 16:9 ~24.
 
 Rules:
   * keep every spoken character except pure fillers (呃 嗯 啊 哦 唔 诶 唉 哟)
@@ -97,7 +101,9 @@ def split_words(words, segments):
     return groups
 
 
-def build_cues(words, segments=None):
+def build_cues(words, segments=None, max_chars=None, pause_break=None):
+    max_chars = max_chars or MAX_CHARS
+    pause_break = pause_break or PAUSE_BREAK
     chars = []
     for start, end, token in words:
         pieces = list(token)
@@ -143,9 +149,9 @@ def build_cues(words, segments=None):
         if buf_text:
             if last_seg is not None and seg != last_seg:
                 force_break = True
-            elif len(buf_text) + len(tok) > MAX_CHARS:
+            elif len(buf_text) + len(tok) > max_chars:
                 force_break = True
-            elif (tok_start - buf_end) >= PAUSE_BREAK and len(buf_text) >= 6:
+            elif (tok_start - buf_end) >= pause_break and len(buf_text) >= 6:
                 force_break = True
         if force_break:
             cues.append((buf_start, buf_end, buf_text))
@@ -169,20 +175,37 @@ def fmt(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+def parse_flags(argv):
+    rest, max_chars, pause_break = [], None, None
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--max-chars" and i + 1 < len(argv):
+            max_chars = int(argv[i + 1])
+            i += 2
+        elif argv[i] == "--pause-break" and i + 1 < len(argv):
+            pause_break = float(argv[i + 1])
+            i += 2
+        else:
+            rest.append(argv[i])
+            i += 1
+    return rest, max_chars, pause_break
+
+
 def main() -> int:
-    if len(sys.argv) < 5:
+    argv, max_chars, pause_break = parse_flags(sys.argv[1:])
+    if len(argv) < 4:
         print(__doc__)
         return 2
-    words = filter_fillers(load_words(sys.argv[1]))
-    segments = load_segments(sys.argv[2])
-    out_lines = sys.argv[3]
-    out_srt = sys.argv[4]
+    words = filter_fillers(load_words(argv[0]))
+    segments = load_segments(argv[1])
+    out_lines = argv[2]
+    out_srt = argv[3]
     replacements = {}
-    if len(sys.argv) > 5:
-        with open(sys.argv[5], encoding="utf-8") as fh:
+    if len(argv) > 4:
+        with open(argv[4], encoding="utf-8") as fh:
             replacements = json.load(fh)
 
-    cues = build_cues(words, segments)
+    cues = build_cues(words, segments, max_chars=max_chars, pause_break=pause_break)
     fixed = []
     for start, end, text in cues:
         for src, dst in replacements.items():

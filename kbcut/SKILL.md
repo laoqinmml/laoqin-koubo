@@ -519,6 +519,7 @@ python $KBCUT/scripts/make_captions_from_asr.py \
 - `replacements.json` 固定替换听写错误，只做同长替换、不改时间轴。常用：`wp/wps/WPa→WP`、`vps→VPS`、`ok→OK`、`shopee→Shopee`、`webflow→Webflow`、`老辛/老金→老秦`、`模改→魔改`、`sars/saas→SaaS`、`外貌→外贸`、`建筑公司→建站公司`。
 - 生成后跑 `check_captions.py`；并核对字幕开始时间是否落在 >0.4s 的静音段里（正常应接近 0 条）。两者都过才能进 6.0。
 - `..._断行.txt` 是用逐词稿生成的产出物，供人工复核文本；不要靠手工改它的行数来对时间。
+- **适用于所有画幅与所有风格**：每行字数上限取当前风格/画幅的字幕预算（`make-package.cjs` 打印的「每行上限 N 字」，即 `frame.md` 的 `caption-max-width ÷ caption-size`），用 `--max-chars N` 传给 `make_captions_from_asr.py`。founder-interview 9:16 ≈13 字、16:9 ≈24 字；其他 style（broadside、knowledge-sharing、自定义 frame.md）按各自预算执行。横屏、竖屏、任何风格都用这同一条字幕流程。
 
 如果需要沿用已有的手写断行文本，也可以用 `scripts/make_timed_srt_words.py`（字符流对齐）把断行文本对齐到词级时间戳，但它不保证全量覆盖，只适合断行文本与语音逐字一致的场景。
 
@@ -578,7 +579,7 @@ node $KBCUT/scripts/make-package.cjs \
 
 #### 6.0.1 预览回路
 
-调整布局用快照，不要用整片渲染。快照 2 秒出图，渲染要 1-2 分钟。
+调整布局用快照，不要用整片渲染。快照 2 秒出图，渲染要 1-2 分钟。**所有预览/确认用截图统一保存到 `<工作目录>/预览截图/`，不要写进交付目录；交付目录只放成片、封面、发布物料和 dbs 底稿。**
 
 ```bash
 npx hyperframes snapshot <包装项目> --at 2s --at <中段> --at <末段> -o <工作目录>/快照
