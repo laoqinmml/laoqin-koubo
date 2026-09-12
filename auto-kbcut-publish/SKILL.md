@@ -41,6 +41,7 @@ description: 当用户说“开始剪辑”时自动编排批量剪辑发布：�
 - `scheduledTime` 不得用整点（X:00），按 config.md 的非整点排期表。
 - 半自动在未拿到用户「封面 + 包装预览确认」前，禁止正式发布。
 - 整片渲染前必须先过**批次级**预览门：本次任务全部视频的封面 + 截图（每条 2 封面 + 4 截图）一次性交付确认，用户一次确认后才允许批量 `hyperframes render`。
+- 渲染与压缩走 GPU：整片 `hyperframes render` 必须带 `--gpu`；成片压缩用 `h264_nvenc -preset p5 -tune hq -rc vbr -cq 19 -b:v 8M -maxrate 8M -bufsize 12M`，无 NVENC 时回退 `libx264 -crf 20 -preset medium`。中间文件（口播优化版）用 `h264_nvenc`/`hevc_nvenc -rc vbr -cq 26 -b:v 0`——实测该档与旧默认 `libx264 crf20` 码率持平（2.46 vs 2.41 Mbps）且 SSIM 略优（0.9829 vs 0.9818）；NVENC 的 cq 比 x264 的 crf 松，不要照搬 crf 数值。实测 60 秒 1080p 素材：`libx264` 压缩耗 CPU 105.6s，`h264_nvenc` 仅 2s；3 并发时差距更大。GPU 不可用时自动回退 CPU，画质参数不变。
 - 字幕行 ≤16 字、一句一段、AI 语义断行，不做关键词黄色高亮（`caption_emphasis` 用 `["__none__"]` 关闭自动提取）。
 - IP 介绍：横屏整段常驻；竖屏只在 2–6 秒显示。
 - 封面默认出 16:9 与 3:4 两版。账号子文件夹有单独人像照片时：3:4 用 gpt-image-2 图生图（`references/cover-prompt-photography.md` 模板，标题取该视频封面标题的两行文字），16:9 仍用 KB Cut 抽帧 + 标题模板；没有照片时两版都走 KB Cut 默认封面。
