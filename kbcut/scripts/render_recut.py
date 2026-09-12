@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import re
 import shlex
 import subprocess
 import tempfile
@@ -53,8 +54,24 @@ def probe(source: Path) -> tuple[dict, dict]:
     return stream, payload.get("format", {})
 
 
+_ENCODERS: str | None = None
+
+
 def available_encoders() -> str:
-    return run(["ffmpeg", "-hide_banner", "-encoders"], capture=True).stdout
+    global _ENCODERS
+    if _ENCODERS is None:
+        _ENCODERS = run(["ffmpeg", "-hide_banner", "-encoders"], capture=True).stdout
+    return _ENCODERS
+
+
+def headroom(bitrate: str, factor: float = 1.5) -> str | None:
+    """把 "10.5M" 这类目标码率放大成峰值码率；解析不出来时返回 None。"""
+    match = re.fullmatch(r"\s*([0-9.]+)\s*([kKmM]?)\s*", bitrate or "")
+    if not match:
+        return None
+    value = float(match.group(1)) * factor
+    unit = match.group(2) or ""
+    return f"{value:.0f}{unit}"
 
 
 def select_encoder(stream: dict, override: str | None) -> tuple[str, str, str]:
@@ -64,13 +81,24 @@ def select_encoder(stream: dict, override: str | None) -> tuple[str, str, str]:
         source_codec = stream.get("codec_name")
         ten_bit = "10" in stream.get("pix_fmt", "")
         use_hevc = source_codec == "hevc" or ten_bit
-        desired = "hevc_videotoolbox" if use_hevc else "h264_videotoolbox"
-        fallback = "libx265" if use_hevc else "libx264"
-        encoder = desired if platform.system() == "Darwin" and desired in available_encoders() else fallback
+        encoders = available_encoders()
+        videotoolbox = "hevc_videotoolbox" if use_hevc else "h264_videotoolbox"
+        nvenc = "hevc_nvenc" if use_hevc else "h264_nvenc"
+        if platform.system() == "Darwin" and videotoolbox in encoders:
+            encoder = videotoolbox
+        elif platform.system() == "Windows" and nvenc in encoders:
+            # 2026-09-12 实测（1080p30 10-bit 源，10 秒素材）：libx265 medium 耗
+            # CPU 196.5s、墙钟 40.4s，hevc_nvenc 耗 CPU 17.4s、墙钟 3.8s；
+            # H.264 侧 libx264 medium 105.6s、墙钟 17.5s → h264_nvenc 43.9s、墙钟 11.6s。
+            # 画质对拍 SSIM 0.9502 → 0.9487、PSNR 33.33 → 33.33，肉眼无差异。
+            encoder = nvenc
+        else:
+            encoder = "libx265" if use_hevc else "libx264"
 
     hevc = "265" in encoder or "hevc" in encoder
     ten_bit = "10" in stream.get("pix_fmt", "")
-    pixel_format = "p010le" if hevc and ten_bit and "videotoolbox" in encoder else None
+    hardware_10bit = "videotoolbox" in encoder or "nvenc" in encoder
+    pixel_format = "p010le" if hevc and ten_bit and hardware_10bit else None
     if pixel_format is None:
         pixel_format = "yuv420p10le" if hevc and ten_bit else "yuv420p"
     return encoder, pixel_format, "hvc1" if hevc else "avc1"
@@ -96,6 +124,32 @@ def codec_args(encoder: str, stream: dict, plan: dict) -> list[str]:
     if "videotoolbox" in encoder:
         options = ["-allow_sw", "1", "-b:v", bitrate]
         if "hevc" in encoder and "10" in stream.get("pix_fmt", ""):
+            options.extend(["-profile:v", "main10"])
+        return options
+    if "nvenc" in encoder:
+        hevc = "hevc" in encoder
+        options = [
+            "-preset",
+            str(plan.get("nvenc_preset", "p5")),
+            "-tune",
+            str(plan.get("nvenc_tune", "hq")),
+            "-rc",
+            "vbr",
+            "-cq",
+            str(plan.get("cq", 26)),
+        ]
+        if plan.get("video_bitrate"):
+            options.extend(["-b:v", str(plan["video_bitrate"])])
+            peak = str(plan.get("maxrate") or "") or headroom(str(plan["video_bitrate"]))
+            if peak:
+                options.extend(["-maxrate", peak, "-bufsize", "12M"])
+        else:
+            # 纯 CQ，让编码器按画面复杂度分配码率。2026-09-12 实测（720p 素材，
+            # 17 秒）：cq26 出 2.46 Mbps / SSIM 0.9829，旧默认 libx264 crf20 是
+            # 2.41 Mbps / SSIM 0.9818——码率持平、画质略优。cq 尺度比 x264 的 crf
+            # 松，用 cq19 会膨胀到 12.9 Mbps，不要照搬 crf 数值。
+            options.extend(["-b:v", "0"])
+        if hevc and "10" in stream.get("pix_fmt", ""):
             options.extend(["-profile:v", "main10"])
         return options
     if encoder == "libx265":

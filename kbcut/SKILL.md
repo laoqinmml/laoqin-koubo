@@ -14,7 +14,7 @@ description: 使用 FFmpeg、火山引擎语音识别、HyperFrames 完成 KB Cu
 - 使用火山引擎大模型语音识别（Seed ASR 标准版）转写，中文、词级时间戳。
 - KB Cut 项目统一归档在项目根目录 `E:\自动剪辑`；源素材目录只作读取，不把项目建在素材目录里。
 - 成片音频默认统一响度到约 `-23 LUFS`（两遍 loudnorm 线性增益：`I=-23:TP=-1.5:LRA=11`），不压缩动态，避免成片偏响或偏轻。响度统一必须在 HyperFrames 渲染之前完成，渲染后不再做二次响度处理，并删除未统一响度的旧版中间文件。
-- 成片默认只保留压缩版：HyperFrames 渲染完成后，用 FFmpeg 压缩到约 8 Mbps（`libx264 -crf 20 -maxrate 8M -bufsize 12M -c:a copy`），删除未压缩的高码率原版，最终交付只保留压缩版。
+- 成片默认只保留压缩版：HyperFrames 渲染完成后，用 FFmpeg 压缩到约 8 Mbps，**优先走 GPU**（`h264_nvenc -preset p5 -tune hq -rc vbr -cq 19 -b:v 8M -maxrate 8M -bufsize 12M`），无 NVENC 时回退 `libx264 -crf 20 -preset medium -maxrate 8M -bufsize 12M`；两者都加 `-pix_fmt yuv420p -c:a copy`，删除未压缩的高码率原版，最终交付只保留压缩版。
 - 在任何耗时环境检测、转写、剪辑或创意包装前，先完成 `$kbcut-style` 风格解析门：确定风格 ID、`frame.md` 来源、工作目录副本路径，并把该 `frame.md` 作为包装与封面设计规则来源。用户未提供风格时，也要记录使用默认 `assets/frame.md`。
 - 中文动态字幕和封面内容优先使用所选 `frame.md` 定义的字体角色；若风格未声明字体角色，再回退到 `字由简宋`，本地缺失时回退到 `Songti SC Bold` / `Songti SC Black`，主要字重为 700-900，禁止使用宋体 Light 或细 Regular 作为动态字幕。
 - 画幅不能静默默认：用户未明确选择时，必须在启动前展示画幅列表并等待确认。
@@ -653,6 +653,8 @@ node $KBCUT/scripts/make-cover.cjs \
 ### 8. 导出与验收
 
 运行 HyperFrames 的 lint、运行时、布局、动效、对比度和快照检查。按已确认的画幅导出成片，并对比原素材、口播优化版和包装成片的代表帧。
+
+**编码默认走 GPU。** 渲染时给 HyperFrames 加 `--gpu`（走 NVENC，比 `libx264`/`libx265` medium 省约 90% CPU、快约 10 倍），成片压缩按第 1 节的 `h264_nvenc` 参数。GPU 编码只替换编码器，不改变画面内容与色彩，肤色基准仍按第 5.3 步的 SDR 转码版判断。显卡不可用、或加了 `--gpu` 后渲染失败时，回退 CPU 编码（去掉 `--gpu`、压缩改回 `libx264 -crf 20 -preset medium`）并在汇报里说明；不要为了绕开 GPU 去改调色或降画质参数。
 
 如果人物肤色变白、变亮、饱和度降低或明显偏离口播优化版，必须判定导出失败。追查色彩链路并重新渲染，禁止用主观调色抵消技术错误。
 
