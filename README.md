@@ -9,4 +9,6 @@
 
 四个技能默认走 GPU 编码（NVENC）：口播优化版用 `hevc_nvenc`/`h264_nvenc -rc vbr -cq 26 -b:v 0`，成片压缩用 `h264_nvenc -cq 19 -b:v 8M`，HyperFrames 渲染加 `--gpu`；无显卡或编码失败时自动回退 CPU。实测 60 秒 1080p 素材：`libx264` 压缩耗 CPU 105.6s，`h264_nvenc` 约 2s。
 
+另外本仓库保存一份 `yixiaoer/SKILL.md`：蚁小二 skill 本体由 `yxer update` 安装与更新，但 `SKILL.md` 开头那段「用户既定偏好（本机覆盖）」是本机定制，**执行过 `yxer update` 之后要把本仓库这份覆盖回 `C:\Users\NBAMA\.agents\skills\yixiaoer\SKILL.md`**，否则「发布一律走本机通道」等长期默认值会丢失。
+
 账号映射、字幕规则与默认参数见 `auto-kbcut-publish/references/config.md`。

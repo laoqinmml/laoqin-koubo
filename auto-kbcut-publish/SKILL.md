@@ -38,6 +38,7 @@ description: 当用户说“开始剪辑”时自动编排批量剪辑发布：�
 - 状态文件 `processed.json` 与 `.env` 都放在编排目录 `C:\Users\NBAMA\Documents\自动剪辑`。
 - 生图密钥只从 `.env` 读取，不写入文档、不回显、不提交。
 - 发布必须先用同一份 payload 和同一套发布通道参数完成 `yxer validate` 与 `yxer publish --dry-run`，通过后再正式发布。
+- 发布通道**一律本机发布**（`--publish-channel local --client-id Z-jzdLWSjV1Zmo6hTXpD9`），不用云发布；本机发布依赖蚁小二客户端保持在线，排期要避开关机时段。
 - `scheduledTime` 不得用整点（X:00），按 config.md 的非整点排期表。
 - 半自动在未拿到用户「封面 + 包装预览确认」前，禁止正式发布。
 - 整片渲染前必须先过**批次级**预览门：本次任务全部视频的封面 + 截图（每条 2 封面 + 4 截图）一次性交付确认，用户一次确认后才允许批量 `hyperframes render`。
