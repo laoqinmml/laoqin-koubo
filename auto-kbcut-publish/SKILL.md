@@ -23,7 +23,7 @@ description: 当用户说“开始剪辑”时自动编排批量剪辑发布：�
    - 全自动：跳过交互门，直接写入 `input_choices.json`。风格 founder-interview；画幅按素材长宽比（竖屏 9:16、横屏 16:9）；**3 秒钩子=保留拍摄时的原始开头顺序，不寻找、不前置金句**（`hook_strategy: preserve_original_opening`、`hook_reorder_authorized: false`）；裁切=居中/自动；个人 IP=老秦。
    - 半自动：画幅仍按长宽比自动，但先确认风格、3 秒钩子策略、裁切锚点（复用 KB Cut 裁切对比图）。
    - 字幕：口播优化版复核转写后，按「AI剪口播 断行规则」（references/config.md 有完整版）做 AI 语义断行：每行 ≤16 字、一句一段、去标点、不拆动宾/偏正/介宾/数量词+名词/专名/“的”字结构，生成的字幕 SRT 再进包装；不要用纯字符切分。
-4. KB Cut 转写完成后，先按 `xhs-copy-keyword-mining` 的规格（事实纪律、六大因子、关键词四维、封面 12–24 字 / 标题 3 个×16–20 字 / 正文 100–160 字 / 标签 10 个）起草封面文字、标题、正文与标签，再交给 human-writing 做「活人感」润色，生成小红书发布物料，覆盖 KB Cut 默认的小红书文案。抖音 / 视频号 / B站 / 快手 的标题与简介同样按这套因子与关键词方法写，长度沿用 kbcut 的平台规格。
+4. KB Cut 转写完成后，**每个平台都**先按 `xhs-copy-keyword-mining` 的规格（事实纪律、六大因子、关键词四维、封面 12–24 字 / 标题 3 个×16–20 字 / 正文 100–160 字 / 标签 10 个）起草封面文字、标题、正文与标签，再交给 human-writing 做「活人感」润色，生成发布物料，覆盖 KB Cut 默认文案。适用于小红书 / 抖音 / 视频号 / B站 / 快手 / YouTube 全部平台，不是只做小红书；平台自身限制更严时取更严的那条。
 5. 封面：账号子文件夹里有单独人物照片（png/jpg/heic）时，3:4 封面用 gpt-image-2 图生图（提示词模板见 [references/cover-prompt-photography.md](references/cover-prompt-photography.md)，两行标题替换为该视频自己的封面标题，生成图已含标题，直接交付）；16:9 封面仍用 KB Cut 抽帧 + 标题模板，不做生图。没有照片时两版都用 KB Cut 默认封面。
 6. 预览门（批次级，全自动与半自动都要执行）：本次任务里所有视频先把封面和带字幕截图做好，一次性交给用户确认——每条 6 张图（2 个封面 + 4 张带字幕截图：开头 3s、中段前、中段后、末段）；用户一次确认后才统一批量渲染，不要逐条确认逐条渲染。
 7. 按账号子文件夹映射蚁小二账号组，用 yxer 上传视频和封面、组装 payload、`validate` → `publish --dry-run` → 正式发布；定时发布用 `scheduledTime`，时间取 config.md 的非整点排期。
@@ -37,7 +37,7 @@ description: 当用户说“开始剪辑”时自动编排批量剪辑发布：�
 - 素材目录只读：不在 `G:\0 视频未剪辑` 内写文件或建项目。
 - 状态文件 `processed.json` 与 `.env` 都放在编排目录 `C:\Users\NBAMA\Documents\自动剪辑`。
 - 生图密钥只从 `.env` 读取，不写入文档、不回显、不提交。
-- 文案按 `xhs-copy-keyword-mining` 的规格写（事实纪律、标题六大因子、关键词四维、封面 12–24 字 / 标题 3 个×16–20 字 / 正文 100–160 字 / 标签 10 个），再用 human-writing 去 AI 腔；同一话题多账号各自的标题与标签必须按账号重写，不能共用一套。细则见 [references/config.md](references/config.md) 的「标题与文案规格」。
+- 文案按 `xhs-copy-keyword-mining` 的规格写（事实纪律、标题六大因子、关键词四维、封面 12–24 字 / 标题 3 个×16–20 字 / 正文 100–160 字 / 标签 10 个），再用 human-writing 去 AI 腔。**这条对小红书 / 抖音 / 视频号 / B站 / 快手 / YouTube 所有平台一视同仁**，不是只做小红书；平台自身限制更严时取更严的那条。同一话题下每个账号、每个平台的标题与标签必须各自重写，不能共用一套。细则见 [references/config.md](references/config.md) 的「标题与文案规格」。
 - 发布必须先用同一份 payload 和同一套发布通道参数完成 `yxer validate` 与 `yxer publish --dry-run`，通过后再正式发布。
 - 发布通道**一律本机发布**（`--publish-channel local --client-id Z-jzdLWSjV1Zmo6hTXpD9`），不用云发布；本机的网络**不要挂代理**（含蚁小二账号里的代理节点）——素材要从蚁小二 OSS 下载，走代理会中途断流并把任务卡死在 `upload/doing`。
 - 定时发布同样走本机提交（带 `scheduledTime` 也用 local，不必改用云通道）。**硬条件只有一个：提交 `publish` 那一刻蚁小二客户端必须在运行**——客户端关闭时 `publish` 会返回「检测客户端设备未连接,请稍后再试」，而 `validate` / `--dry-run` 仍会通过，不能拿它们判断环境就绪。提交前先确认客户端进程在，不在就先启动 `D:\Program Files\yixiaoer\蚁小二4.0.exe`。**到点那一刻本机不必在线**：客户端在提交时就完成「拉素材 → 上传平台 → 设置平台侧定时」，之后交给平台。
