@@ -175,26 +175,42 @@ cover-aspect-variants:
     title-max-width: "42cqw"
     title-size-max: "10cqw"
 
+# Portrait variants carry the 2026-09-15 user-confirmed caption law: type 15%
+# smaller than the 2026-09-08 portrait baseline, and a hard 8cqw side margin for
+# both the IP block and the caption band (100 - 2*8 = 84cqw). Landscape 16:9 and
+# square 1:1 are deliberately untouched by that law.
 aspect-variants:
   "9:16":
     type-scale: 1.0
+    safe-x: "8cqw"
     caption-zone-top: "70cqh"
     caption-zone-bottom: "86cqh"
-    caption-max-width: "94cqw"
+    caption-max-width: "84cqw"
+    caption-size: "5.95cqw"
+    caption-emphasis-size: "6.72cqw"
+    caption-stroke-width: "0.5cqw"
     title-max-width: "62cqw"
     credentials-max-width: "56cqw"
   "3:4":
     type-scale: 1.0
+    safe-x: "8cqw"
     caption-zone-top: "74cqh"
     caption-zone-bottom: "88cqh"
-    caption-max-width: "94cqw"
+    caption-max-width: "84cqw"
+    caption-size: "5.95cqw"
+    caption-emphasis-size: "6.72cqw"
+    caption-stroke-width: "0.5cqw"
     title-max-width: "62cqw"
     credentials-max-width: "56cqw"
   "4:5":
     type-scale: 1.0
+    safe-x: "8cqw"
     caption-zone-top: "72cqh"
     caption-zone-bottom: "87cqh"
-    caption-max-width: "94cqw"
+    caption-max-width: "84cqw"
+    caption-size: "5.95cqw"
+    caption-emphasis-size: "6.72cqw"
+    caption-stroke-width: "0.5cqw"
     title-max-width: "62cqw"
     credentials-max-width: "56cqw"
   "1:1":
@@ -244,7 +260,7 @@ motion:
   emphasis-reveal: "Emphasized chunks appear directly as bold yellow using {colors.accent-primary}; optional scale 0.98->1 over 100-160ms. No color sweep."
   caption-exit: "Replace at phrase boundaries with a quick 80-120ms opacity drop, or hard cut on a breath."
   progress-advance: "Fill scales x 0->1 linearly across the whole clip. Strictly linear, no easing, no pulse, no colour change at completion — it reports elapsed time and nothing else."
-  prohibited: "No bounce captions, sticker pop, colored word plates, karaoke highlight bars, neon glow, heavy type stroke, grain, particle noise, thick subtitle shadow, large black blocks, or unrequested decorative gradients. The progress bar is not a karaoke bar: it tracks clip elapsed time, never the spoken word, and must never highlight or wipe the caption text itself."
+  prohibited: "No bounce captions, sticker pop, colored word plates, karaoke highlight bars, neon glow, heavy type stroke, grain, particle noise, thick subtitle shadow, large black blocks, or unrequested decorative gradients. Exception: portrait captions carry the thin black outline defined in the portrait laws below; that outline is typographic legibility, not sticker language. The progress bar is not a karaoke bar: it tracks clip elapsed time, never the spoken word, and must never highlight or wipe the caption text itself."
 ---
 
 # Founder Interview — Founder Typeface Authority Frame
@@ -447,7 +463,7 @@ Resolution order: this frame's `spacing` baseline → aspect-ratio variant → s
 ## 竖版与封面投影规则（2026-09-08 起）
 
 - 竖版成片一律不显示左上话题锁（topic lockup），只保留 IP 介绍（姓名 + 资历），放在画面左侧，整块相对原中心位置上移自身高度一半（2026-09-09 起），并加深色半透明底板 `rgba(0,0,0,0.5)` 作为背景。
-- 动态字幕字号相对旧基线放大 2 倍：正文 `caption-base` 由 `3.5cqw` 调为 `7.0cqw`，强调 `caption-emphasis` 由 `3.95cqw` 调为 `7.9cqw`。
+- 动态字幕字号相对旧基线放大 2 倍：正文 `caption-base` 由 `3.5cqw` 调为 `7.0cqw`，强调 `caption-emphasis` 由 `3.95cqw` 调为 `7.9cqw`。（2026-09-15 起竖版在此基础上再减 15%，改为 `5.95cqw` / `6.72cqw`，见末节。）
 - 封面标题（横版与竖版一致）加浅投影 `text-shadow: 0 2px 10px rgba(0,0,0,0.55), 0 0 3px rgba(0,0,0,0.35)`，仅作用于文字，用于在白底上区分文字，不压暗封面背景。
 
 ## 竖版黑体 / 字幕投影 / IP 时长（2026-09-08 追加）
@@ -459,6 +475,20 @@ Resolution order: this frame's `spacing` baseline → aspect-ratio variant → s
 ## 竖屏统一规则（2026-09-08 固化，直接复用）
 
 - 竖屏成片不显示左上话题锁（topic lockup），只保留 IP 介绍。
-- IP 介绍：左侧，2026-09-09 起整块相对原中心位置上移自身高度一半（模板竖屏规则：`--ip-top` 锚点 70% + `translateY(-100%)`，底边落在锚点处），深色半透明底 `rgba(0,0,0,0.5)`；仅在第 2–6 秒出现；姓名 `4.2cqw`、资历 `3.2cqw`；字体为黑体 `TitleSansExtra`（思源黑体）。
-- 字幕：黑体 `TitleSansExtra`（思源黑体），正文 `7.0cqw`、强调 `7.9cqw`；无底色，深色投影 `text-shadow: 0 2px 8px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.55)`；9:16 安全区 `70–86cqh`。
+- IP 介绍：左侧，2026-09-09 起整块相对原中心位置上移自身高度一半（模板竖屏规则：`--ip-top` 锚点 70% + `translateY(-100%)`，底边落在锚点处），深色半透明底 `rgba(0,0,0,0.5)`；仅在第 2–6 秒出现；姓名 `4.2cqw`、资历 `3.2cqw`；字体为黑体 `TitleSansExtra`（思源黑体）；左边界自 2026-09-15 起不少于 `8cqw`。
+- 字幕：黑体 `TitleSansExtra`（思源黑体），9:16 安全区 `70–86cqh`；字号与文字样式按末节《竖版安全边距与字幕描边（2026-09-15）》执行（正文 `5.95cqw`、强调 `6.72cqw`，白色填充 + 黑色描边）。
 - 封面标题（横竖一致）加浅投影 `0 2px 10px rgba(0,0,0,0.55), 0 0 3px rgba(0,0,0,0.35)`。
+
+## 竖版安全边距与字幕描边（2026-09-15 用户确认，最高优先）
+
+用户 2026-09-15 明确要求：竖版成片的三条硬规则如下。横版（16:9、4:3）与方版（1:1）一律不变。
+
+1. **字幕再小 15%**：在 2026-09-08 的竖版基线上按 0.85 缩放——正文 `caption-base` 由 `7.0cqw` 调为 `5.95cqw`（1080 宽约 64px），强调 `caption-emphasis` 由 `7.9cqw` 调为 `6.72cqw`。
+2. **白色填充 + 黑色描边**：竖版字幕改为 `color: #FFFFFF`，配 `-webkit-text-stroke: var(--caption-stroke-width) #000000`（竖版 `0.5cqw`，1080 宽约 5.4px，可见外沿约 2.7px），并用 `paint-order: stroke fill` 让填充压在描边之上、字形不变细。2026-09-08 起的深色投影 `text-shadow` 在竖版取消，黑色描边就是它的替代。
+3. **两侧至少 8cqw 安全距**：IP 贴图与字幕距画面左右边缘各不少于 `8cqw`。字幕最大宽度取 `84cqw`（`100 - 8×2`），IP 块左边界取 `8cqw`。
+
+落地位置：
+
+- 数字写在 `aspect-variants` 的 `9:16` / `3:4` / `4:5`（`safe-x`、`caption-max-width`、`caption-size`、`caption-emphasis-size`、`caption-stroke-width`）。
+- 行为写在 `template.html` 的 `@media (orientation: portrait)` 块：字幕描边与白色填充、`#upper-left-column` 的 `left: max(var(--safe-x), 8cqw)` 下限、`#captions-container` 的 `min(var(--caption-max-width), 84cqw)` 上限。用 `max()` / `min()` 兜底，即使日后把 frame.md 的数字调大或调小，8cqw 这条线也破不了。
+- 每行字数会随之从 13 字（`94 ÷ 7.0`）变为 13 字（`84 ÷ 5.95`），一屏仍放得下同样的句子，只是字变小、两边留白变宽。
