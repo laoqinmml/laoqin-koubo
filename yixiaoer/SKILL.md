@@ -16,7 +16,8 @@ metadata:
 以下为本机用户已确认的长期默认值：
 
 - 发布通道：**一律本机发布**（`--publish-channel local` 并带 `--client-id`）。云发布不再作为默认，只有用户当次明确要求云端代理时才用。本机发布前确认蚁小二客户端在线；`validate`、`publish --dry-run`、正式 `publish` 三步必须用同一套通道参数。
-- 定时发布也走本机提交（带 `scheduledTime` 一样用 local）。**硬条件：提交 `publish` 那一刻客户端必须在运行**，否则返回「检测客户端设备未连接,请稍后再试」；`validate` 与 `--dry-run` 不检查客户端，不能用它们判断环境就绪。客户端不在时先启动 `D:\Program Files\yixiaoer\蚁小二4.0.exe`，等日志出现「设备注册成功」再提交。
+- 定时发布也走本机提交（带 `scheduledTime` 一样用 local）。**硬条件：提交 `publish` 那一刻客户端必须在运行**，否则返回「检测客户端设备未连接,请稍后再试」；`validate` 与 `--dry-run` 不检查客户端，不能用它们判断环境就绪。客户端不在时先启动 `D:\Program Files\yixiaoer\蚁小二4.0.exe`，等日志出现「设备注册成功」再提交。**到点那一刻本机不需要在线**：客户端在提交时就完成「从 OSS 拉素材 → 上传到平台 → 设置平台侧定时」，之后由平台接手。
+- 素材下载**必须直连，不要挂代理**：本机发布的素材要先从蚁小二 OSS（`https://oss-v2.yixiaoer.cn/yfb/...`）下到本机。账号里绑的代理节点会让下载中途断流（实测 179.9MB 只下到 120MB，日志报 `400 The plain HTTP request was sent to HTTPS port`），任务随即永久卡在 `upload/doing`。直连实测 179.9MB / 6.5 秒下完。**换节点或关掉代理之后，必须回头手动重推积压任务**——卡住的任务不会自愈，详见 `auto-kbcut-publish/references/config.md`。
 - 原创声明：小红书 / 视频号默认 `createType: 1`（声明原创）；抖音无此字段。
 - 位置：小号 / 企业号的抖音、小红书默认「萧山机器人小镇」；大号组默认「浙江和诚智能电气有限公司」。发布前用 `yxer query locations` 取真实 POI 候选，不要手编 raw。
 - 「个人观点仅供参考」声明：哔哩哔哩 `declaration: 6`、快手 `declaration: 3`、视频号 `declaration: 8`；抖音 / 小红书 / YouTube 不支持该字段。

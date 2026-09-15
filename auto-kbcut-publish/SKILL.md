@@ -38,8 +38,9 @@ description: 当用户说“开始剪辑”时自动编排批量剪辑发布：�
 - 状态文件 `processed.json` 与 `.env` 都放在编排目录 `C:\Users\NBAMA\Documents\自动剪辑`。
 - 生图密钥只从 `.env` 读取，不写入文档、不回显、不提交。
 - 发布必须先用同一份 payload 和同一套发布通道参数完成 `yxer validate` 与 `yxer publish --dry-run`，通过后再正式发布。
-- 发布通道**一律本机发布**（`--publish-channel local --client-id Z-jzdLWSjV1Zmo6hTXpD9`），不用云发布；本机发布依赖蚁小二客户端保持在线，排期要避开关机时段。
-- 定时发布同样走本机提交（带 `scheduledTime` 也用 local，不必改用云通道）。**硬条件只有一个：提交 `publish` 那一刻蚁小二客户端必须在运行**——客户端关闭时 `publish` 会返回「检测客户端设备未连接,请稍后再试」，而 `validate` / `--dry-run` 仍会通过，不能拿它们判断环境就绪。提交前先确认客户端进程在，不在就先启动 `D:\Program Files\yixiaoer\蚁小二4.0.exe`。
+- 发布通道**一律本机发布**（`--publish-channel local --client-id Z-jzdLWSjV1Zmo6hTXpD9`），不用云发布；本机的网络**不要挂代理**（含蚁小二账号里的代理节点）——素材要从蚁小二 OSS 下载，走代理会中途断流并把任务卡死在 `upload/doing`。
+- 定时发布同样走本机提交（带 `scheduledTime` 也用 local，不必改用云通道）。**硬条件只有一个：提交 `publish` 那一刻蚁小二客户端必须在运行**——客户端关闭时 `publish` 会返回「检测客户端设备未连接,请稍后再试」，而 `validate` / `--dry-run` 仍会通过，不能拿它们判断环境就绪。提交前先确认客户端进程在，不在就先启动 `D:\Program Files\yixiaoer\蚁小二4.0.exe`。**到点那一刻本机不必在线**：客户端在提交时就完成「拉素材 → 上传平台 → 设置平台侧定时」，之后交给平台。
+- 代理变更（换节点 / 关代理 / 修网络）之后**必须回头重推积压**：卡在 `upload/doing` 的任务不会自愈，重启客户端也没用，只能在客户端点「重新发布」，或用本地原始 payload 重建任务。
 - `scheduledTime` 不得用整点（X:00），按 config.md 的非整点排期表。
 - 半自动在未拿到用户「封面 + 包装预览确认」前，禁止正式发布。
 - 整片渲染前必须先过**批次级**预览门：本次任务全部视频的封面 + 截图（每条 2 封面 + 4 截图）一次性交付确认，用户一次确认后才允许批量 `hyperframes render`。
