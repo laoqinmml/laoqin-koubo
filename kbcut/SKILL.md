@@ -774,6 +774,10 @@ node $KBCUT/scripts/make-publish.cjs \
 - 2026-09-07：转写引擎切换为火山引擎大模型语音识别（Seed ASR 标准版）。`transcribe_local.py` 改为 submit→query 异步调用，API Key 从 `VOLCENGINE_API_KEY`（环境变量或 `AI剪口播/.env`）读取，输出格式（.json/.txt/.words.tsv/.srt）保持不变；转写音频会上传火山引擎，其余素材、成片与交付仍全部保存在本地。
 
 - 2026-09-08：项目根目录约定写入 Skill：KB Cut 项目统一归档到 `E:\自动剪辑`（用户项目根目录），未显式指定工作目录时以其为 `PROJECT_ROOT`；素材目录只读取、不建项目。同时 GSAP 改为本地化引用（`gsap.min.js` 随风格预设复制进输出目录），渲染不再依赖 CDN 联网。
+
+- 2026-09-16：Windows 下 `make-cover.cjs` 报 `hyperframes snapshot failed → spawnSync npx ENOENT`，封面 HTML 正常生成（标题、字号、落位都对）但 `--png` 不产出。根因是脚本内部用 `spawnSync("npx", …)` 调快照，而 Windows 上 `npx` 实际是 `npx.cmd`，不加 `shell: true` 时 Node 解析不到。处置：页面生成后用同一环境手动补跑 `npx hyperframes snapshot <输出目录> --at 0.5s`，再从 `<输出目录>\snapshots\` 取 `frame-*.png`。另注意 **snapshot 每次运行会清空自己的 `snapshots/` 目录**，要多张快照必须逐张跑完立刻取走，或分别输出到不同目录，否则只剩最后一张。
+- 2026-09-16：新增风格预设 `founder-interview-dark`。与 `founder-interview` 共用 `frame.md`、`template.html` 和全部字体，**只替换封面模板**：封面仍是整幅截图，上面加一层 50% 黑蒙版（`rgba(0,0,0,0.5)`），标题改为纯白、整体上下居中。用于背景明亮或杂乱、白字黑底更好读的场景。风格是按目录名自动发现的，新增预设只需在 `$kbcut-style/assets/frame-presets/` 下建同名目录并放齐 `frame.md` / `template.html` / `cover.html` / `gsap.min.js` / `fonts/`。
+- 2026-09-16：`make-cover.cjs` 会按 `frame.md` 校验封面标题字数（founder-interview 家族为 6–8 字）。超字数只告警不失败，但会挤压安全区：实测「WA自动回复 / 这三个最值钱」（12 字）字号被压到 13.07cqw，压到 8 字后回到 19.60cqw。写封面标题时先按预算字数提炼，别等告警。
 - 2026-09-08：音频响度规则写入 Skill：成片导出后统一响度到约 `-23 LUFS`（两遍 loudnorm 线性增益 `I=-23:TP=-1.5:LRA=11`），视频流复制、只重编码音频，保持动态不压缩。
 
 - 2026-09-08：响度统一改为「渲染前」完成：先对包装用素材做两遍 loudnorm（`I=-23:TP=-1.5:LRA=11`，线性增益），再用统一响度后的素材进入 HyperFrames 渲染；渲染后不再二次处理，并删除未统一响度的旧版中间文件。

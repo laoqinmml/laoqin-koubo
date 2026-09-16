@@ -1,0 +1,158 @@
+<!doctype html>
+<!--@template-doc
+  founder-interview-dark — KB Cut cover template.
+
+  Same fonts, same in-video template.html and same frame.md as
+  founder-interview. The ONLY difference is this cover: the still keeps its
+  full-bleed framing, a 50% black scrim sits on top of it, and the title is
+  pure white and centred vertically so it stays readable on any background.
+
+  Placeholder contract is identical to founder-interview's cover.html:
+    {{COVER_TITLE_LINES}}      2 lines
+    {{COVER_BACKGROUND_SRC}}   clean still extracted by make-cover.cjs
+    {{FONT_COVER_TITLE}} {{LAYOUT_VARS}} {{COMPOSITION_*}} {{DURATION_SECONDS}}
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width={{COMPOSITION_WIDTH}}, height={{COMPOSITION_HEIGHT}}" />
+    <title>KB Cut — founder-interview-dark cover</title>
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "FounderCoverTitle";
+        src: url("fonts/{{FONT_COVER_TITLE}}");
+        font-weight: 400;
+        font-display: block;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+      }
+
+      #root {
+        {{LAYOUT_VARS}}
+
+        position: relative;
+        width: {{COMPOSITION_WIDTH}}px;
+        height: {{COMPOSITION_HEIGHT}}px;
+        overflow: hidden;
+        container-type: size;
+        font-family: "FounderCoverTitle", sans-serif;
+        letter-spacing: 0;
+      }
+
+      #stage-ground {
+        position: absolute;
+        inset: 0;
+        background: #000000;
+        z-index: 0;
+      }
+
+      .clip {
+        position: absolute;
+      }
+
+      #cover-background {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: var(--cover-anchor-x) var(--cover-anchor-y);
+        transform: scale(var(--cover-scale));
+        transform-origin: var(--cover-anchor-x) var(--cover-anchor-y);
+        z-index: 1;
+      }
+
+      /* 50% black scrim: lets any still carry pure white type. */
+      #cover-scrim {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2;
+      }
+
+      /* Title block sits in the optical middle of the frame. */
+      #cover-title {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8cqh;
+        z-index: 100;
+      }
+
+      .cover-title-line {
+        position: static;
+        width: auto;
+        max-width: 88%;
+        margin: 0;
+        font-weight: 400;
+        font-size: var(--title-size);
+        color: #ffffff;
+        line-height: var(--title-line-height);
+        white-space: nowrap;
+        text-align: center;
+      }
+
+      /* Portrait and landscape share one rule: centred, pure white. */
+      @media (orientation: portrait) {
+        #cover-title {
+          justify-content: center;
+        }
+      }
+
+      @media (orientation: landscape) {
+        #cover-title {
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="{{COMPOSITION_ID}}"
+      data-start="0"
+      data-width="{{COMPOSITION_WIDTH}}"
+      data-height="{{COMPOSITION_HEIGHT}}"
+      data-duration="{{DURATION_SECONDS}}"
+    >
+      <div id="stage-ground"></div>
+
+      <img
+        id="cover-background"
+        class="clip"
+        src="{{COVER_BACKGROUND_SRC}}"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="0"
+        alt=""
+      />
+
+      <div class="clip" id="cover-scrim" data-start="0" data-duration="{{DURATION_SECONDS}}" data-track-index="1"></div>
+
+      <div
+        id="cover-title"
+        class="clip"
+        data-start="0"
+        data-duration="{{DURATION_SECONDS}}"
+        data-track-index="2"
+      >
+        {{COVER_TITLE_LINES}}
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.to({ hold: 0 }, { hold: 1, duration: {{DURATION_SECONDS}} }, 0);
+      window.__timelines["{{COMPOSITION_ID}}"] = tl;
+    </script>
+  </body>
+</html>
