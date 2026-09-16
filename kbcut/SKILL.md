@@ -778,6 +778,7 @@ node $KBCUT/scripts/make-publish.cjs \
 - 2026-09-16：Windows 下 `make-cover.cjs` 报 `hyperframes snapshot failed → spawnSync npx ENOENT`，封面 HTML 正常生成（标题、字号、落位都对）但 `--png` 不产出。根因是脚本内部用 `spawnSync("npx", …)` 调快照，而 Windows 上 `npx` 实际是 `npx.cmd`，不加 `shell: true` 时 Node 解析不到。处置：页面生成后用同一环境手动补跑 `npx hyperframes snapshot <输出目录> --at 0.5s`，再从 `<输出目录>\snapshots\` 取 `frame-*.png`。另注意 **snapshot 每次运行会清空自己的 `snapshots/` 目录**，要多张快照必须逐张跑完立刻取走，或分别输出到不同目录，否则只剩最后一张。
 - 2026-09-16：新增风格预设 `founder-interview-dark`。与 `founder-interview` 共用 `frame.md`、`template.html` 和全部字体，**只替换封面模板**：封面仍是整幅截图，上面加一层 50% 黑蒙版（`rgba(0,0,0,0.5)`），标题改为纯白、整体上下居中。用于背景明亮或杂乱、白字黑底更好读的场景。风格是按目录名自动发现的，新增预设只需在 `$kbcut-style/assets/frame-presets/` 下建同名目录并放齐 `frame.md` / `template.html` / `cover.html` / `gsap.min.js` / `fonts/`。
 - 2026-09-16：`make-cover.cjs` 会按 `frame.md` 校验封面标题字数（founder-interview 家族为 6–8 字）。超字数只告警不失败，但会挤压安全区：实测「WA自动回复 / 这三个最值钱」（12 字）字号被压到 13.07cqw，压到 8 字后回到 19.60cqw。写封面标题时先按预算字数提炼，别等告警。
+- 2026-09-16：出双封面（16:9 + 3:4）时踩坑：`make-cover.cjs` 的画布尺寸取自 **`input_choices.width` / `input_choices.height`（也就是项目画幅）**，`cover.aspect_ratio` 只决定排版变体、不决定画布大小。只改 `cover.aspect_ratio` 再跑两遍，会得到两张**完全一样**的 1080×1920 PNG，文件名不同而已。要出真正的双封面，必须每次把 `width`/`height` 也改成目标比例（3:4 → 1080×1440、16:9 → 1920×1080），出完核对 PNG 实际尺寸再交付。
 - 2026-09-08：音频响度规则写入 Skill：成片导出后统一响度到约 `-23 LUFS`（两遍 loudnorm 线性增益 `I=-23:TP=-1.5:LRA=11`），视频流复制、只重编码音频，保持动态不压缩。
 
 - 2026-09-08：响度统一改为「渲染前」完成：先对包装用素材做两遍 loudnorm（`I=-23:TP=-1.5:LRA=11`，线性增益），再用统一响度后的素材进入 HyperFrames 渲染；渲染后不再二次处理，并删除未统一响度的旧版中间文件。
