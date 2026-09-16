@@ -110,6 +110,10 @@
       @media (orientation: landscape) {
         #cover-title {
           justify-content: center;
+          /* 横屏：两行标题左右并排，不上下堆叠 */
+          flex-direction: row;
+          align-items: center;
+          gap: 3cqw;
         }
       }
     </style>
