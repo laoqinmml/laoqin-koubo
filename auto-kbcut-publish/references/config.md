@@ -304,7 +304,17 @@ timeout of 200000ms exceeded
 
 #### 违禁词与写法红线（2026-09-17 用户再次强调，优先级最高）
 
-**所有平台一律不得出现 `WhatsApp`**（平台违禁词，会限流或拒发），统一写成 **`WA`**。**YouTube 同样适用**——YouTube 的标题、简介、Tags 也全部用中文写，不写英文，Tags 字段填中文标签。
+**违禁词不止 `WhatsApp` 一个。** 完整替换表以 `kbcut/references/xiaohongshu.md` 的「违禁词替换」为准，**标题、正文、标签三处都不能出现原词**，一律按下面替换（2026-09-17 用户指出我只核了 WhatsApp，漏了其余四条）：
+
+| 原词 | 替换 |
+| --- | --- |
+| facebook / Facebook | `F^B` |
+| instagram / Instagram | `IN^S` |
+| whatsapp / WhatsApp | `W^A` |
+| youtube / YouTube | `油^管` |
+| google / Google / 谷歌 | `谷^哥` |
+
+**YouTube 品牌名本身也要写成 `油^管`**，并且 YouTube 的标题、简介、Tags 全部用中文写，不写英文，Tags 字段填中文标签。
 
 同一类会触发平台风控的写法都不写：
 
