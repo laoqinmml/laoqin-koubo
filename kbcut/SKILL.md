@@ -523,6 +523,8 @@ python $KBCUT/scripts/make_captions_from_asr.py \
 
 如果需要沿用已有的手写断行文本，也可以用 `scripts/make_timed_srt_words.py`（字符流对齐）把断行文本对齐到词级时间戳，但它不保证全量覆盖，只适合断行文本与语音逐字一致的场景。
 
+**本机首选（2026-09-18 本地定制）：`scripts/make_timed_srt_snapped.py`**——同一套 AI 语义断行，但把「AI 文本」降级为**分段点**，每行字幕的显示文本**取自逐词稿本身**（只去纯语气词 呃/嗯/唔）。上游 `make_timed_srt_words.py` 要求 AI 文本是逐词稿的**字符子序列**，一旦 AI 改了错别字/删了语气词，游标就会越跑越靠前并把末尾十几行**静默丢弃**（实测 57 行只剩 44 条，且不报错）；本脚本从机制上消掉这一类丢行，字幕用字与口播完全一致。用法同样是 `<words.tsv> <lines.txt> <out.srt>`，生成的 SRT 照常过 `check_captions.py`。**检测丢行**：脚本会打印 `跳过 N 行`，N 必须为 0。
+
 #### 5.3 苹果 MOV / HLG 源 HDR→SDR 预处理（必做，进入包装前）
 
 用 ffprobe 判断口播优化版（或原素材）是否为苹果 iPhone HDR 素材：QuickTime MOV / HEVC 10-bit，且 `color_transfer=arib-std-b67`（HLG）、`color_primaries=bt2020`。命中时必须先按 `$ffmpeg-hdr-color` 技能把整条口播优化版转成 BT.709 SDR，再进入 6.0 包装；禁止直接把 HLG 画面喂给 HyperFrames 渲染（实测直渲会发灰发白或过饱和，肤色失真）。
@@ -676,7 +678,8 @@ ffprobe -v error -show_entries stream=codec_type -of csv=p=0 <成片.mp4>
 - `{stem}_发布物料.md` + `{stem}_发布物料.json`
 - `{stem}_dbs-文稿底稿.md`（供本机 dbs 打分；未打分时也要生成）
 - `{stem}_发布物料.md` 内含「小红书文案」小节（撰写规范见 `references/xiaohongshu.md`；不单独交付 `{stem}_小红书文案.md`）
-- **`{stem}_发布文案.md`（每条自己一份，必须放进该条的 `交付文件/`）**：写清这条视频在**每个目标平台**的封面标题、标题、正文、话题标签（或 YouTube 的中文 Tags），一个平台一块。不要只在批次汇总目录放一份总表——发布时要按条取用，文案必须跟着交付文件走。多账号同话题时，每个账号自己的项目里放**自己那套**，不要复制别人的。
+- **不交付 `{stem}_发布文案.md`（2026-09-18 用户要求）**：每个目标平台的封面标题、标题、正文、话题标签（或 YouTube 的中文 Tags）一个平台一块，**直接并入 `{stem}_发布物料.md`**；块内只保留**1 个最终标题**，不再给「3 选 1」候选菜单，「推荐标题」也只留主推的 1 个。同时删掉 make-publish 自动生成的「视频简介」原文块与 Tags 草稿。多账号同话题时，每个账号自己的项目里放**自己那套**，不要复制别人的。
+- **项目里不放字体包（2026-09-18 用户两次要求）**：字体的唯一真源是风格预设的 `fonts/`，**`工作文件/fonts` 不许存在**。生成目录（`hyperframes/package`、`hyperframes/cover_*`）里各有一个指向预设的 Junction（0 字节）——这是必须的：实测 Chrome 在 `file://` 下拒绝跨目录加载字体（绝对路径也会静默回退成默认字体），字体必须与 `index.html` 同级。本地定制在 `scripts/lib/common.cjs`（`copyFonts()` 建 Junction、`resolveStyleFiles()` 在项目无真实字体目录时回落到预设）；模板统一写 `url("{{FONT_X}}")`。初始化时不要把 `fonts/` 复制进 `工作文件`。
 - **发布提交成功后删除 `工作文件/`**（2026-09-17 用户规则）：该条视频的全部目标平台都提交成功（拿到 `publishId`，含定时发布）后，把 `<项目>/工作文件/` 整个删掉，只留 `交付文件/`。任一条未成功就先保留，用于排查。删掉即失去重渲染用的母版与打包工程，重做要从原素材重跑剪辑。
 - `工作文件/`：转写、`edit_plan.json` 和复核记录
 
@@ -737,6 +740,7 @@ node $KBCUT/scripts/make-publish.cjs \
 - `scripts/make-cover.cjs`：由风格的 `cover.html` 生成封面组合并输出 PNG。
 - `scripts/make-publish.cjs`：由成片 SRT 与 `input_choices` 生成发布物料，并导出本地 dbs 文稿底稿。
 - `scripts/make_timed_srt_words.py`：用词级时间戳把断行文本对齐成字幕 SRT（替代按字数比例分摊）。
+- `scripts/make_timed_srt_snapped.py`：**本机首选的断行对齐器**（本地定制）——AI 只给分段点，字幕文本取自逐词稿，从机制上避免上游对齐器在文本非子序列时静默丢行。
 - `scripts/make_captions_from_asr.py`：由逐词稿全量生成字幕（去语气词 + jieba 词边界断行 + 词级时间戳），首选做法。
 - `scripts/lib/common.cjs`：两个生成器共用的契约校验、布局级联、字体复制与占位符填充。
 - `scripts/lib/frame_md.cjs`：`frame.md` frontmatter 读取与占位符收集，无第三方依赖。
