@@ -20,7 +20,8 @@ metadata:
 - 素材下载**必须直连，不要挂代理**：本机发布的素材要先从蚁小二 OSS（`https://oss-v2.yixiaoer.cn/yfb/...`）下到本机。账号里绑的代理节点会让下载中途断流（实测 179.9MB 只下到 120MB，日志报 `400 The plain HTTP request was sent to HTTPS port`），任务随即永久卡在 `upload/doing`。直连实测 179.9MB / 6.5 秒下完。**换节点或关掉代理之后，必须回头手动重推积压任务**——卡住的任务不会自愈，详见 `auto-kbcut-publish/references/config.md`。
 - 原创声明：小红书 / 视频号默认 `createType: 1`（声明原创）；抖音无此字段。
 - 位置：小号 / 企业号的抖音、小红书默认「萧山机器人小镇」；大号组默认「浙江和诚智能电气有限公司」。发布前用 `yxer query locations` 取真实 POI 候选，不要手编 raw。
-- 「个人观点仅供参考」声明：哔哩哔哩 `declaration: 6`、快手 `declaration: 3`、视频号 `declaration: 8`；抖音 / 小红书 / YouTube 不支持该字段。
+- 「个人观点仅供参考」声明：哔哩哔哩 `declaration: 6`、快手 `declaration: 3`、视频号 `declaration: 8`；抖音 / 小红书 / YouTube 不支持该字段。**视频号每次提交都必须带 `declaration: 8`，属强制项**：组装完 payload 后先确认 `accountForms[].contentPublishForm.declaration === 8`，漏了就补上再 `validate`。
+- **视频号 `duration` 必须填「秒」，不是毫秒**：填成毫秒（如 `202300`）会被视频号当成 202300 秒 ≈ 56 小时，直接返回 `300801 request failed`，客户端提示「时长不能超过120分钟」。`yxer upload --auto-meta` 返回的 `duration` 本来就是秒（如 `202.3`、`278`），**直接用它，不要换算**，且 `publishArgs.video` 与 `accountForms[].video` 两处都要填。排查这类通用错误码时，先与客户端手动发布的报文做字段级对比。
 - 大号组哔哩哔哩封面：优先使用 16:9 横屏封面（不用 3:4 竖版封面）。
 - **违禁词红线（最高优先级）**：所有平台一律不得出现 `WhatsApp`，统一写成 `WA`；YouTube 同样适用，且 YouTube 的标题 / 简介 / Tags 也用中文，不写英文。品牌一律用业界缩写（WA / FB / IG），不写翻墙类工具名，不写绝对承诺。**组装 payload 前逐条通读标题、简介、标签，命中即改写。**
 - 文案处理：**所有平台**（小红书 / 抖音 / 视频号 / B站 / 快手 / YouTube）的标题与简介都先按 `xhs-copy-keyword-mining` 的规格写（事实纪律、标题六大因子、关键词四维、封面 12–24 字 / 标题 3 个×16–20 字 / 正文 100–160 字 / 标签 10 个；平台限制更严时取更严的那条），再用「活人感写作」（human-writing skill）润色标题与简介，去掉 AI 腔 / 机构腔 / 营销腔，最后组装 payload；素材里的原始文案也要按同一套规格改写后再用。同一话题下每个账号、每个平台各写各的，不能共用一套。
