@@ -258,6 +258,15 @@ timeout of 200000ms exceeded
 | `timeout of 30000ms exceeded` | **YouTube** | **云发布** | 云端接管上传，本机只是在**轮询状态**，30 秒拿不到结果就判失败 |
 
 YouTube 走云发布，本机 `platform-service` 日志里**完全没有 YouTube 记录**（视频号/抖音/小红书都在）。
+
+**为什么 YouTube 不能走本机通道（2026-09-18 查证客户端代码）**：蚁小二客户端本机只实现「浏览器会话发布」——
+用内置 Chromium 打开各平台创作后台（`channels.weixin.qq.com`、creator.douyin.com、creator.xiaohongshu.com 等）完成上传，
+所以这些平台的痕迹都在本机 `platform-service` 日志与 `Partitions/auth-*` 会话目录里。
+YouTube 没有网页创作后台、走的是 Data API + OAuth，客户端本机**没有对应实现**：
+在 `D:\Program Files\yixiaoer\resources\app.asar` 里按平台名计数，
+`shipinhao` 52 / `xiaohongshu` 43 / `douyin` 38 / `bilibili` 17，而 **`youtube` 只有 3 处，且全部是 `mime-db` 的 MIME 类型字符串**（`video/vnd.youtube.yt`），没有任何发布逻辑。
+即：**YouTube 只能走云发布，不是可切换的选项**；那个 30 秒超时是云通道固定的等待窗口，客户端里没有可调开关。
+
 上传一条 200–285MB 成片要几分钟，远超 30 秒轮询窗口，于是：
 
 1. 本机把这条标成 `upload/fail` + `timeout of 30000ms exceeded`；
@@ -273,6 +282,9 @@ YouTube 走云发布，本机 `platform-service` 日志里**完全没有 YouTube
 - 判定要**等一个冷却期**（建议 ≥10 分钟）再去平台后台核对；YouTube 没有查询接口，**只能人工看 YouTube Studio**。
 - 只有「无 `publishId` + 状态 `fail` + 平台后台也确实没有」，才是真失败。
 - 补发 YouTube 前，先在 Studio 里按**标题 + 时长**核对（时长是最可靠的指纹，各条互不重复；仅看标题容易把重复副本当成已发）。
+- **YouTube 无法改成本机发布**（客户端没有该实现，见上）。要彻底避免重复，二选一：
+  ① 交给蚁小二云发布时，**提交后不要立刻判定失败**——记下 taskId，隔 30 分钟以上再去 YouTube Studio 核对，确认没有再补发；
+  ② 大文件（≥150MB）干脆**手动在 YouTube Studio 上传**，绕开 30 秒窗口。
 
 ## 平台侧的定时下限（2026-09-15 实测）
 
