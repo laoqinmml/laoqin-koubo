@@ -243,7 +243,9 @@
       }
 
       .caption-line {
-        display: inline-block;
+        /* 2026-09-22：必须是 block。inline-block 会让一条字幕的**多行并排**显示，
+           观众看到的是一长行（实测 17 字挤成一行）。block 才能上下堆叠成两行。 */
+        display: block;
         font-size: var(--caption-size);
         font-weight: 400;
         color: rgba(255, 255, 255, 0.88);
