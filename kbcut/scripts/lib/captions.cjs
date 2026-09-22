@@ -57,6 +57,10 @@ function parseSrt(content) {
       start: timeToSeconds(startRaw),
       end: timeToSeconds(endRaw),
       text,
+      // 2026-09-22：保留 SRT 里**显式写的换行**。断行由上游用 jieba 词边界 + 词性
+      // （动宾/介词短语/数量词）算好，比这里的字符级折行更准；不保留就会被 breakLine
+      // 按字符重折，切出「…后台在 / 广告组…」这类破词。单行条目不受影响。
+      explicitLines: textLines.map((l) => l.trim()).filter(Boolean),
     });
   }
 
@@ -238,7 +242,14 @@ function buildCaptions(srtSegments, options) {
       text = text.slice(0, -1);
     }
 
-    const rawLines = breakLine(text, maxChars);
+    // 2026-09-22：SRT 里显式写了多行、且每行都在预算内 → 直接采用，
+    // 不再用 breakLine 按字符重折（那会切断中文词，用户反馈过「单词都被拆开」）。
+    const useExplicit =
+      Array.isArray(segment.explicitLines) &&
+      segment.explicitLines.length > 1 &&
+      segment.explicitLines.length <= maxLines &&
+      segment.explicitLines.every((line) => [...line].length <= maxChars);
+    const rawLines = useExplicit ? segment.explicitLines : breakLine(text, maxChars);
     if (rawLines.length > maxLines) {
       warnings.push({
         index: segment.index,

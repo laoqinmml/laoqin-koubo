@@ -291,10 +291,11 @@ function main() {
   const COVER_LINE_FILL_CQW = 88;
   const coverLineSize = (text) =>
     `${Math.min(COVER_LINE_FILL_CQW / lineUnits(text), 30).toFixed(2)}cqw`;
-  // 横屏（2026-09-18 用户要求）：两行并排、共用一个字号，整体墨迹宽**不超过画面 70%**。
-  // 按两行总字数反推字号：ink ≈ 0.91 × 行宽之和 + 行间距（汉字 side bearing），
-  // 行间距取模板里的 3cqw。上限 20cqw，避免极短标题被放大到离谱。
-  const LANDSCAPE_INK_CQW = 69;
+  // 横屏（2026-09-21 用户定版）：两行并排、中间留空隙、整体墨迹 **82%~92%** 画面宽。
+  // 按两行总字数反推字号：ink ≈ INK_RATIO × 行宽之和 + 行间距（汉字 side bearing），
+  // 行间距取模板里的 3cqw。目标 86.5cqw（实测换算后落在 87.5% 左右）。
+  // 2026-09-22 修正：旧值 69cqw 实测只到 69.5%，低于 82% 的下限门。
+  const LANDSCAPE_INK_CQW = 86.5;
   const LANDSCAPE_GAP_CQW = 3;
   const INK_RATIO = 0.91;
   const totalUnits = lines.reduce((sum, line) => sum + lineUnits(line), 0);

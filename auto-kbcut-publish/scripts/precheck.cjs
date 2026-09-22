@@ -208,7 +208,17 @@ function checkProject(project) {
   if (fs.existsSync(srtPath)) {
     const lines = fs.readFileSync(srtPath, 'utf8').split(/\r?\n/).filter((l) => l.trim() && !/^\d+$/.test(l.trim()) && !l.includes(' --> '));
     const maxLen = Math.max(...lines.map((l) => l.length));
-    add(scope, `字幕每行 ≤ ${capBudget} 字`, maxLen <= capBudget, `最长 ${maxLen} 字 / ${lines.length} 段`);
+    // 2026-09-21：拉丁/英文缩写是不可切分的整体（ComputerUse=11、Codex、AccessToken…）。
+    // 当某行超限的唯一原因是「放不下一个 ≥5 字符的拉丁词」时，允许到 cap+2；
+    // 纯中文行一律按 cap 硬判。
+    const longLatin = lines.filter((l) => /[A-Za-z]{5,}/.test(l));
+    const overByLatin = longLatin.filter((l) => l.length > capBudget && l.length <= capBudget + 2);
+    const hardOver = lines.filter((l) => l.length > capBudget
+      && !(overByLatin.includes(l)));
+    add(scope, `字幕每行 ≤ ${capBudget} 字（含拉丁词不可切时 ≤${capBudget + 2}）`,
+      hardOver.length === 0,
+      `最长 ${maxLen} 字 / ${lines.length} 段`
+      + (overByLatin.length ? `；其中 ${overByLatin.length} 段因英文整词不可切为 ${capBudget + 2} 字` : ''));
 
     // 2026-09-21 事故门（字幕与声音对不上）：SRT 时间轴必须是「成片时间轴」。
     // 判据：末条结束时间应≈成片时长（差 >1.5s = 用了源素材时间轴，字幕会提前）。
@@ -224,7 +234,12 @@ function checkProject(project) {
     })();
     if (srtEnd > 0 && finalDur > 0) {
       const diff = Math.abs(finalDur - srtEnd);
-      add(scope, '字幕时间轴 = 成片时间轴（防字声不同步）', diff <= 1.5,
+      // 2026-09-21 修订：本门降级为「粗筛」，不能按「末条 ≈ 片长」严格判。
+      // 成片尾部常见无语音的静音或已删语气词，字幕自然早于片尾结束（实测差 2.6~3.3s 属正常）。
+      // 真正的字声一致校验放在**渲染后自查**：对成片重新转写，再比 SRT 与真实发音的偏置
+      // （`_0921_postcheck.py`，通过标准 |偏差| 中位 ≤0.5s）。
+      // 这里只拦「整条时间轴跑偏」量级的问题。
+      add(scope, '字幕与成片同尺度（粗筛 ≤6s，精测见渲染后自查）', diff <= 6.0,
         `SRT 末条 ${srtEnd.toFixed(2)}s / 成片 ${finalDur.toFixed(2)}s（差 ${diff.toFixed(2)}s）`);
     } else {
       warn(scope, '字幕时间轴可校验', false, 'SRT 或成片缺失');
@@ -251,17 +266,15 @@ function checkProject(project) {
   const c16 = path.join(deliv, `${stem}_16-9_封面.png`);
   const c34 = path.join(deliv, `${stem}_3-4_封面.png`);
   const dim = (p) => (fs.existsSync(p) ? ffprobe(['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', p]).replace(/[,\r\n]+$/, '') : '缺失');
-  // 2026-09-21 用户规范：成片保持源视频原始画幅/尺寸，封面也必须与成片同比例。
-  // 封面尺寸门从「固定 1920x1080 / 1080x1440」放宽为「与 input_choices 的 width×height 一致」。
-  const nativeTag = `${ch.width}x${ch.height}`;
-  const portrait = ch.height > ch.width;
-  const nativeCover = path.join(deliv, `${stem}_${portrait ? '9-16' : '16-9'}_封面.png`);
-  const nativeCoverAlt = path.join(deliv, `${stem}_${portrait ? '16-9' : '9-16'}_封面.png`);
-  const useNative = fs.existsSync(nativeCover) ? nativeCover : nativeCoverAlt;
-  add(scope, `原生比例封面 = 成片尺寸 ${nativeTag}`,
-    dim(useNative) === `${ch.width},${ch.height}`,
-    `${path.basename(useNative)}=${dim(useNative)}`);
-  add(scope, `投流竖版封面尺寸 1080x1440`, dim(c34) === '1080,1440', dim(c34));
+  // 2026-09-21 用户确认：不再产出「与成片同比例」的封面（蚁小二没有对应平台字段，无平台会用它）。
+  // 只保留平台真正会用的两版，并按平台对照表校验尺寸：
+  //   3:4  → 抖音 / 小红书 / 视频号
+  //   16:9 → 快手 / 大号组 B站
+  add(scope, '封面 3:4 = 1080x1440（抖音/小红书/视频号）', dim(c34) === '1080,1440', dim(c34));
+  add(scope, '封面 16:9 = 1920x1080（快手/大号组B站）', dim(c16) === '1920,1080', dim(c16));
+  const legacyNativePath = path.join(deliv, `${stem}_9-16_封面.png`);
+  add(scope, '无多余的 9-16 封面（无平台使用）', !fs.existsSync(legacyNativePath),
+    fs.existsSync(legacyNativePath) ? '存在，应删除' : '仅 3:4 与 16:9');
 
   // 2026-09-20：新增第二个风格（knowledge-sharing）。封面门从「必须是 founder-interview-dark」
   // 改成「必须是当前 style_id 预设自带的 cover.html」；founder 家族仍强制 dark 版。
@@ -316,7 +329,11 @@ function checkProject(project) {
     const g = landscapeGeometry(c16);
     if (!g) add(scope, '16:9 封面标题几何', false, '未识别到亮字');
     else if (founderCover) {
-      add(scope, '16:9 整体宽度 ≤70% 画面宽', g.pct <= 70, `整体 ${g.pct.toFixed(1)}%（x ${g.x0}..${g.x1}）`);
+      // 2026-09-21 用户改版式：横版封面改为**一行两句、中间空开、水平居中**，
+      // 整行墨迹天然横跨约 90% 画面宽 —— 旧的「≤70%（两行左右分栏）」门已不适用。
+      // 新门：宽度落在 82%~92%（够醒目、又不贴边），且标题块垂直居中。
+      add(scope, '16:9 单行标题宽度 82%~92% 画面宽', g.pct >= 82 && g.pct <= 92,
+        `整体 ${g.pct.toFixed(1)}%（x ${g.x0}..${g.x1}）`);
       add(scope, '16:9 标题没有偏小（≥60%）', g.pct >= 60, `${g.pct.toFixed(1)}%`, 'WARN');
       add(scope, '16:9 标题块垂直居中（偏差 ≤20px）', Math.abs(g.center - g.frameCenter) <= 20, `中心 ${g.center.toFixed(0)} vs ${g.frameCenter}`);
     } else {
