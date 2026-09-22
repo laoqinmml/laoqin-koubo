@@ -694,7 +694,55 @@ node "C:\Users\NBAMA\.agents\skills\auto-kbcut-publish\scripts\precheck.cjs" --r
 - **素材音轨体检（开工前）**：`0918\小号2` 6 条 OBS 录制里 **4 条音轨整条损坏**（aac 解码错误 3901~15045 行、抽出音轨后 `mean_volume = −91 dB` 等于静音），同批企业号 / 大号 / 小号1 全部正常。体检命令 `ffmpeg -v error -i <素材> -vn -f null -`（错误 0 行、`volumedetect` 的 mean_volume 明显高于 −80 才算好）；坏的直接找录制端补录/重导，别花时间做计划。同一场次若有其他机位（如「大号」与「小号2」是并行录制），可用完好机位的音轨替换，替换前必须做同步取证（画面嘴动曲线 vs 音频包络互相关，三段残余偏移 ≤80ms 才可用）。
 - **段边界核对（剪辑计划后、渲染前）**：`make_edit_plan.py` 用源素材 ASR 逐词稿的时间戳，个别素材上偏 0.5–1.2 秒，会把边界切在说话中间（成片截字/咔哒；0918 小号2 08-15-57 实测 8 个边界里 4 个在有声区）。跑 `scripts/snap_plan_to_silence.py <edit_plan.json> [--source 原始素材] [--apply]`：按 20ms 窗 RMS 把边界吸到「±1s 内最安静的点」，**退出码 0 才算合格**；若报「内部边界附近没有明显低电平点」→ ASR 报的 >1.2s 停顿是假的，**必须合并相邻段**。计划里的 `source` 常是已清理的中间产物，脚本会自动去 `G:\0 视频未剪辑` 按素材号找原片。2026-09-18 用它对 0918 全部 18 条已交付项目复核：**0 条不合格**。
 
-### 发布侧沉淀（2026-09-18 企业号批次实测）
+### ★★★ 发布侧沉淀（2026-09-22 0921 批次 13 目标实测，最高优先）
+
+**本批结果：11 个平台侧确认成功、2 个失败、1 个跳过。** 下面每条都是花钱/花时间换来的。
+
+1. **本机发布必须串行，严禁并发！**
+   首次把 12 个本机任务同时提交 → **7 个 upload 失败**，客户端日志原文
+   `EPERM: operation not permitted, rename '...<hash>.mp4.downloading' -> '...<hash>.mp4'`，
+   另有 push 阶段 `ENOENT: ...mp4`。**已排除网络/代理**（本机直连 OSS 实测 HEAD 200、
+   3MB 分片 308ms 正常）。改**串行重推（间隔 90–120 秒）后 9 个全部成功**。
+   → 批量发布一律串行 + 间隔，不要贪快。
+
+2. **title 有硬超限，两种平台不一致**：`validate` 会报
+   `/title: must NOT have more than 30 characters`（抖音）、`more than 20 characters`（小红书）。
+   压缩 title 时**正文/标签/封面/成片一字不改**；小红书优先用物料里自带的「短标题」。
+
+3. **抖音 POI 库可能被锁在别的城市**：本机抖音账号 POI 库只返回**内蒙古鄂尔多斯**的候选，
+   查「浙江和诚智能电气有限公司」0 条、查「萧山机器人小镇」也只回鄂尔多斯。
+   `location` 是可选字段 → **留空并如实报告，绝不编造 POI**。
+   小红书 POI 正常（大号 `浙江和诚智能电气有限公司` B0H1RU965J；小号 `机器人小镇` B0FFICON9M）。
+
+4. **YouTube 走云发布，且云发布有流量额度**：额度不足时 HTTP 403 原文
+   `{"statusCode":403,"message":"流量不足以本次发布"}` —— 这是**账户额度问题不是 payload 问题**，
+   补额度后原样重跑即可（客户端无本机 YouTube 上传实现，只能云）。
+   另外 YouTube 的简介是纯文本，CLI 会把 `#话题` 归一化成 `<topic>` HTML → **仅对 YouTube
+   去掉标签的 `#` 前缀**（标签文字与顺序保持物料原样），dry-run 里确认 YouTube 已无 normalizations。
+
+5. **执行入口**：本机 cmd 控制台代码页 65001 时，`cmd /c "yxer …"` 会把中文路径
+   （`E:\自动剪辑\…`）读成乱码并拆断带空格的引号，报
+   `upload accepts exactly one file path or URL`。
+   → 改用同包原生入口 `...\@yixiaoermail\cli\bin-native\yxer.exe`
+   （同一份 3.2.15、同一 config、clientId 不变）。若必须用 `cmd /c`，先 `chcp 936` 再用 GBK 批处理。
+   **不要用被策略禁止的 `yxer.ps1`。**
+
+6. **快手「平台侧未找到作品」是一种假成功**：蚁小二侧 `allsuccessful`、快手也返回了 publishId，
+   但 `query details` 回查在快手侧 `stages=notfound`，errorMessage 原文
+   `很抱歉，系统未找到此作品(可能已删除)，请前往官方平台确认。`
+   → **回查必须是平台侧状态**；出现 notfound 时**立即停止重试**（每次重试都可能在平台留一条重复），
+   人工去平台后台核对并删除多余条目、检查账号登录态。
+
+7. **账号会失效，配置文档里的 ID 会过期**：企业号小红书在 config 里写 `6aa54e0fc25b5d121bcefcd5`，
+   但 `accounts list 小红书` 已无该账号（非 status=1）→ **跳过，不要用别的账号顶替**。
+   每次发布前以 `yxer accounts list --status 1` 为准。
+
+8. **发布必须逐条回查**：`yxer query details <taskSetId>` 取平台侧最终 `stages`/`stageStatus`/`publishId`，
+   并与 `yxer query records` 的 `taskSetStatus` 交叉核对。**「任务已创建」不等于「发布成功」。**
+
+9. **产物归档**：payload 与回查结果统一放 `E:\DSH\自动剪辑DS\_publish_<日期>\`，
+   并写一份 `发布报告_<日期>.md`（账号组 × 平台 × 账号 × taskSetId × 回查状态 × publishId）。
+
 
 - **3:4 封面有两条路线，precheck 会分流**：`input_choices.cover_3x4_mode === "imagegen"`（大号素材夹有人像照片时按 `config.md` 走 gpt-image-2 生图）→ precheck 跳过「两行撑满≈80%/等宽/垂直居中」这三条模板几何门（它们只适用于 `founder-interview-dark` 排字的封面，生图标题由模型画进画面、位置不受控，亮带启发式还会把明亮背景误判成字）；`template` 路线照旧三条全查。生图封面必须**人工核验标题文字与人物身份**。
 - **precheck 成片名兼容 9:16**：大号成片按口径叫 `{stem}_9-16_包装版.mp4`，precheck 已同时接受 `_9-16_` 与 `_16-9_`（早前会误报「成片存在/交付 6 件」FAIL）。
