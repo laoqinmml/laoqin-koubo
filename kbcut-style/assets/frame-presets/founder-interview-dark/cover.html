@@ -21,7 +21,7 @@
     <style>
       @font-face {
         font-family: "FounderCoverTitle";
-        src: url("fonts/{{FONT_COVER_TITLE}}");
+        src: url("{{FONT_COVER_TITLE}}");
         font-weight: 400;
         font-display: block;
       }
@@ -100,20 +100,41 @@
         text-align: center;
       }
 
-      /* Portrait and landscape share one rule: centred, pure white. */
+      /* Portrait (3:4): the two lines form ONE block, vertically centred in the
+         frame. Each line is sized by its own character count so that it spans
+         ~80% of the frame width through GLYPH SIZE — letter-spacing stays 0.
+         Do NOT pin the lines to the top/bottom edges, and do NOT stretch a
+         short line with wide tracking. */
       @media (orientation: portrait) {
         #cover-title {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
           justify-content: center;
+          gap: 2.4cqh;
+        }
+        #cover-title .cover-title-line {
+          position: static;
+          width: auto;
+          max-width: none;
+          left: auto;
+          font-size: var(--line-size, var(--title-size));
+          letter-spacing: 0;
+          text-align: center;
         }
       }
 
       @media (orientation: landscape) {
         #cover-title {
           justify-content: center;
-          /* 横屏：两行标题左右并排，不上下堆叠 */
+          /* 横屏：两行并排、共用一个字号，整体墨迹宽 ≤ 画面 70%（按两行总字数反推） */
           flex-direction: row;
           align-items: center;
           gap: 3cqw;
+        }
+        #cover-title .cover-title-line {
+          font-size: var(--line-size-landscape, var(--title-size));
+          letter-spacing: 0;
         }
       }
     </style>

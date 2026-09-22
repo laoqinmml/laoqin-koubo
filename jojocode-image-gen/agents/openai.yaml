@@ -1,0 +1,5 @@
+interface:
+  display_name: "JojoCode Image Gen"
+  short_description: "Generate images via JojoCode gpt-image-2"
+  default_prompt: "Use $jojocode-image-gen to generate an image and save it locally; ask me for my JojoCode API key if none is configured yet."
+  brand_color: "#111827"

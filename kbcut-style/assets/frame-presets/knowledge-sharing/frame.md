@@ -29,6 +29,8 @@ fonts:
   cover-title: "fonts/SourceHanSerifSC-Heavy.ttf"
   body-normal: "fonts/NotoSansSC-Medium.otf"
   body-bold: "fonts/NotoSansSC-Bold.otf"
+  # 2026-09-21：动态字幕统一用后现代体（用户要求）
+  caption-normal: "fonts/后现代体.otf"
 
 typography:
   display-strong: { fontFamily: "KnowledgeSerif, Source Han Serif SC, serif", cqw: 8.2, weight: 700, lineHeight: 0.98, tracking: "0" }
@@ -309,3 +311,13 @@ complete with only one of them.
 
 The machine-readable contract lives in the `templates` block of the frontmatter. Reserved
 technical placeholders are supplied by the scripts and never declared here.
+
+## 字幕字体与投影（2026-09-21 用户确认，所有预设通用，最高优先）
+
+- **动态字幕字体 = 后现代体 `HXDCaption`**（`fonts/后现代体.otf`）：`#captions-container` 与 `.caption-line`
+  的 `font-family` 用 `"HXDCaption", ...`。用户明确要求「字幕字体应该是之前的后现代体」，
+  **不要用 Noto Sans SC / 思源黑体** 做字幕。
+- **字幕投影透明度 = 40%**：`text-shadow: 0 2px 8px rgba(0,0,0,0.40), 0 0 3px rgba(0,0,0,0.40)`。
+- **禁止任何描边**：`-webkit-text-stroke`、`paint-order: stroke`、厚描边、深色描字替代一律不许。
+- 身份卡（speaker credentials）与话题锁不属于"字幕"，仍用本预设声明的 Knowledge 系列字体。
+

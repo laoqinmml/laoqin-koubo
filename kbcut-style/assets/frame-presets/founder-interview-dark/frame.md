@@ -188,7 +188,6 @@ aspect-variants:
     caption-max-width: "84cqw"
     caption-size: "5.95cqw"
     caption-emphasis-size: "6.72cqw"
-    caption-stroke-width: "0.5cqw"
     title-max-width: "62cqw"
     credentials-max-width: "56cqw"
   "3:4":
@@ -199,7 +198,6 @@ aspect-variants:
     caption-max-width: "84cqw"
     caption-size: "5.95cqw"
     caption-emphasis-size: "6.72cqw"
-    caption-stroke-width: "0.5cqw"
     title-max-width: "62cqw"
     credentials-max-width: "56cqw"
   "4:5":
@@ -210,7 +208,6 @@ aspect-variants:
     caption-max-width: "84cqw"
     caption-size: "5.95cqw"
     caption-emphasis-size: "6.72cqw"
-    caption-stroke-width: "0.5cqw"
     title-max-width: "62cqw"
     credentials-max-width: "56cqw"
   "1:1":
@@ -260,7 +257,7 @@ motion:
   emphasis-reveal: "Emphasized chunks appear directly as bold yellow using {colors.accent-primary}; optional scale 0.98->1 over 100-160ms. No color sweep."
   caption-exit: "Replace at phrase boundaries with a quick 80-120ms opacity drop, or hard cut on a breath."
   progress-advance: "Fill scales x 0->1 linearly across the whole clip. Strictly linear, no easing, no pulse, no colour change at completion — it reports elapsed time and nothing else."
-  prohibited: "No bounce captions, sticker pop, colored word plates, karaoke highlight bars, neon glow, heavy type stroke, grain, particle noise, thick subtitle shadow, large black blocks, or unrequested decorative gradients. Exception: portrait captions carry the thin black outline defined in the portrait laws below; that outline is typographic legibility, not sticker language. The progress bar is not a karaoke bar: it tracks clip elapsed time, never the spoken word, and must never highlight or wipe the caption text itself."
+  prohibited: "No bounce captions, sticker pop, colored word plates, karaoke highlight bars, neon glow, heavy type stroke, grain, particle noise, thick subtitle shadow, large black blocks, or unrequested decorative gradients. Portrait captions use white fill plus a semi-transparent dark drop shadow (2026-09-21 user law): a stroke/outline of any kind is prohibited, and a heavy or opaque shadow is equally prohibited. The progress bar is not a karaoke bar: it tracks clip elapsed time, never the spoken word, and must never highlight or wipe the caption text itself."
 ---
 
 # Founder Interview — Founder Typeface Authority Frame
@@ -468,27 +465,32 @@ Resolution order: this frame's `spacing` baseline → aspect-ratio variant → s
 
 ## 竖版黑体 / 字幕投影 / IP 时长（2026-09-08 追加）
 
-- 竖版成片的 IP 介绍与动态字幕统一使用黑体（`TitleSansExtra` / 思源黑体 `NotoSansSC`），不再使用 `HXDCaption`（后现代体）作为字幕与资历字体。
-- 字幕不加底色，改用深色投影 `text-shadow: 0 2px 8px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.55)`。
+- 竖版成片的 IP 介绍使用黑体（`TitleSansExtra` / 思源黑体 `NotoSansSC`）。**动态字幕自 2026-09-21 起改回 `HXDCaption`（后现代体）**——用户明确要求「字幕字体应该是之前的后现代体」，本条取代 2026-09-08 的「字幕统一用黑体」。
+- 字幕不加底色，改用 **40% 透明度**深色投影 `text-shadow: 0 2px 8px rgba(0,0,0,0.40), 0 0 3px rgba(0,0,0,0.40)`（2026-09-21 起由 85% 调低到 40%，用户要求）。
 - IP 介绍仅在成片第 2–6 秒出现（2s 淡入、6s 淡出），其余时间不显示。
 
 ## 竖屏统一规则（2026-09-08 固化，直接复用）
 
 - 竖屏成片不显示左上话题锁（topic lockup），只保留 IP 介绍。
 - IP 介绍：左侧，2026-09-09 起整块相对原中心位置上移自身高度一半（模板竖屏规则：`--ip-top` 锚点 70% + `translateY(-100%)`，底边落在锚点处），深色半透明底 `rgba(0,0,0,0.5)`；仅在第 2–6 秒出现；姓名 `4.2cqw`、资历 `3.2cqw`；字体为黑体 `TitleSansExtra`（思源黑体）；左边界自 2026-09-15 起不少于 `8cqw`。
-- 字幕：黑体 `TitleSansExtra`（思源黑体），9:16 安全区 `70–86cqh`；字号与文字样式按末节《竖版安全边距与字幕描边（2026-09-15）》执行（正文 `5.95cqw`、强调 `6.72cqw`，白色填充 + 黑色描边）。
+- 字幕：**`HXDCaption`（后现代体）**，9:16 安全区 `70–86cqh`；字号与文字样式按末节《字幕字体与投影（2026-09-21）》执行（正文 `5.95cqw`、强调 `6.72cqw`，白色填充 + **40% 投影，禁止描边**）。
 - 封面标题（横竖一致）加浅投影 `0 2px 10px rgba(0,0,0,0.55), 0 0 3px rgba(0,0,0,0.35)`。
 
-## 竖版安全边距与字幕描边（2026-09-15 用户确认，最高优先）
+## 字幕字体与投影 + 竖版安全边距（2026-09-21 用户确认，最高优先）
 
-用户 2026-09-15 明确要求：竖版成片的三条硬规则如下。横版（16:9、4:3）与方版（1:1）一律不变。
+用户 2026-09-21 两次明确要求：① **以后一律不要黑色描边的字幕字体**；② **字幕字体要用「之前的后现代体」**，配 **40% 透明度投影**。
+本节取代 2026-09-15 的《竖版安全边距与字幕描边》，成为当前最高优先的竖版字幕规范。
 
-1. **字幕再小 15%**：在 2026-09-08 的竖版基线上按 0.85 缩放——正文 `caption-base` 由 `7.0cqw` 调为 `5.95cqw`（1080 宽约 64px），强调 `caption-emphasis` 由 `7.9cqw` 调为 `6.72cqw`。
-2. **白色填充 + 黑色描边**：竖版字幕改为 `color: #FFFFFF`，配 `-webkit-text-stroke: var(--caption-stroke-width) #000000`（竖版 `0.5cqw`，1080 宽约 5.4px，可见外沿约 2.7px），并用 `paint-order: stroke fill` 让填充压在描边之上、字形不变细。2026-09-08 起的深色投影 `text-shadow` 在竖版取消，黑色描边就是它的替代。
-3. **两侧至少 8cqw 安全距**：IP 贴图与字幕距画面左右边缘各不少于 `8cqw`。字幕最大宽度取 `84cqw`（`100 - 8×2`），IP 块左边界取 `8cqw`。
+1. **字幕再小 15%**（沿用 2026-09-15）：在 2026-09-08 的竖版基线上按 0.85 缩放——正文 `caption-base` 由 `7.0cqw` 调为 `5.95cqw`（1080 宽约 64px），强调 `caption-emphasis` 由 `7.9cqw` 调为 `6.72cqw`。
+2. **字体 = `HXDCaption`（后现代体）**：`#captions-container` 与 `.caption-line` 的 `font-family` 必须是 `"HXDCaption", "FounderBody", sans-serif`；**不要用 `TitleSansExtra`（思源黑体）做字幕**。
+3. **白色填充 + 40% 半透明投影（禁止描边）**：字幕 `color: #FFFFFF`，配 `text-shadow: 0 2px 8px rgba(0,0,0,0.40), 0 0 3px rgba(0,0,0,0.40)`。
+   **禁止**任何 `-webkit-text-stroke`、`paint-order: stroke`、厚描边或深色描字替代；那个投影只压暗字形外沿，不改字重、不糊笔画。
+   2026-09-15 至 2026-09-21 之间使用的 `-webkit-text-stroke: 0.5cqw #000000` 已按用户要求**废除**，相关 `caption-stroke-width` 参数已从 `aspect-variants` 移除。
+4. **两侧至少 8cqw 安全距**：IP 贴图与字幕距画面左右边缘各不少于 `8cqw`。字幕最大宽度取 `84cqw`（`100 - 8×2`），IP 块左边界取 `8cqw`。
 
 落地位置：
 
-- 数字写在 `aspect-variants` 的 `9:16` / `3:4` / `4:5`（`safe-x`、`caption-max-width`、`caption-size`、`caption-emphasis-size`、`caption-stroke-width`）。
-- 行为写在 `template.html` 的 `@media (orientation: portrait)` 块：字幕描边与白色填充、`#upper-left-column` 的 `left: max(var(--safe-x), 8cqw)` 下限、`#captions-container` 的 `min(var(--caption-max-width), 84cqw)` 上限。用 `max()` / `min()` 兜底，即使日后把 frame.md 的数字调大或调小，8cqw 这条线也破不了。
-- 每行字数会随之从 13 字（`94 ÷ 7.0`）变为 13 字（`84 ÷ 5.95`），一屏仍放得下同样的句子，只是字变小、两边留白变宽。
+- 数字写在 `aspect-variants` 的 `9:16` / `3:4` / `4:5`（`safe-x`、`caption-max-width`、`caption-size`、`caption-emphasis-size`）。
+- 行为写在 `template.html`：基础块里 `#captions-container` 与 `.caption-line` 用 `HXDCaption`、`.caption-line` 40% 投影；`@media (orientation: portrait)` 块里字幕白色填充 + 40% 投影、`#upper-left-column` 的 `left: max(var(--safe-x), 8cqw)` 下限、`#captions-container` 的 `min(var(--caption-max-width), 84cqw)` 上限。用 `max()` / `min()` 兜底，即使日后把 frame.md 的数字调大或调小，8cqw 这条线也破不了。
+- 每行字数 13 字（`84 ÷ 5.95`）。
+- **本规范对所有风格预设通用**：`knowledge-sharing` 等不使用 Founder 字体的预设，同样只允许半透明投影，不得改成描边。

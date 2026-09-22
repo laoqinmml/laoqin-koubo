@@ -339,7 +339,7 @@ function main() {
   const choicesPath = path.resolve(args["input-choices"]);
   const choices = readJson(choicesPath);
 
-  const { framePath, templatePath } = resolveStyleFiles(choices, args, "package", "template.html");
+  const { framePath, templatePath, fontDir } = resolveStyleFiles(choices, args, "package", "template.html");
   const frame = parseFrameMd(fs.readFileSync(framePath, "utf8"));
   const template = fs.readFileSync(templatePath, "utf8");
 
@@ -405,7 +405,7 @@ function main() {
   if ((frame.fonts || {})["title-sans"]) {
     fontRoles["title-sans"] = "FONT_TITLE_SANS";
   }
-  const fontFiles = copyFonts(frame, framePath, outputDir, fontRoles);
+  const fontFiles = copyFonts(frame, fontDir, outputDir, fontRoles);
 
   // Bundle a local GSAP copy beside the template so rendering works offline.
   const templateDir = path.dirname(templatePath);

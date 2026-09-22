@@ -32,20 +32,30 @@
     <style>
       @font-face {
         font-family: "KnowledgeSerif";
-        src: url("fonts/{{FONT_COVER_TITLE}}");
+        src: url("{{FONT_COVER_TITLE}}");
         font-weight: 700;
         font-display: block;
       }
       @font-face {
         font-family: "KnowledgeSans";
-        src: url("fonts/{{FONT_BODY_NORMAL}}");
+        src: url("{{FONT_BODY_NORMAL}}");
         font-weight: 400;
         font-display: block;
       }
       @font-face {
         font-family: "KnowledgeSans";
-        src: url("fonts/{{FONT_BODY_BOLD}}");
+        src: url("{{FONT_BODY_BOLD}}");
         font-weight: 700;
+        font-display: block;
+      }
+      /*
+        字幕字体（2026-09-21 用户确认，所有预设通用）：动态字幕统一用 后现代体 `HXDCaption`，
+        不再用 KnowledgeSans / 思源黑体。
+      */
+      @font-face {
+        font-family: "HXDCaption";
+        src: url("{{FONT_CAPTION_NORMAL}}");
+        font-weight: 400 700;
         font-display: block;
       }
 
@@ -138,7 +148,7 @@
 
       #captions-container,
       #captions-container .caption-line {
-        font-family: "KnowledgeSans", sans-serif;
+        font-family: "HXDCaption", "KnowledgeSans", sans-serif;
       }
 
       .caption {
@@ -155,12 +165,11 @@
         display: inline-block;
         font-size: var(--caption-size);
         font-weight: 400;
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(255, 255, 255, 0.88);
         line-height: 1.2;
-        background: rgba(0, 0, 0, 0.45);
-        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-        padding: 0.08em 0.45em;
-        border-radius: 0.14em;
+        /* 2026-09-21 用户确认：字幕用 后现代体 + 40% 透明度投影（无底板、无描边）。 */
+        background: none;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.40), 0 0 3px rgba(0, 0, 0, 0.40);
       }
 
       .chunk {

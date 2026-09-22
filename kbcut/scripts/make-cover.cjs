@@ -146,7 +146,7 @@ function main() {
   const choicesPath = path.resolve(args["input-choices"]);
   const choices = readJson(choicesPath);
 
-  const { framePath, templatePath } = resolveStyleFiles(choices, args, "cover", "cover.html");
+  const { framePath, templatePath, fontDir } = resolveStyleFiles(choices, args, "cover", "cover.html");
   const frame = parseFrameMd(fs.readFileSync(framePath, "utf8"));
   const template = fs.readFileSync(templatePath, "utf8");
 
@@ -232,9 +232,7 @@ function main() {
     }
     return html;
   }
-  const titleHtml = lines
-    .map((line) => `<div class="cover-title-line">${emphasize(line)}</div>`)
-    .join("\n        ");
+  /* titleHtml 在下方 lineUnits() / cjk 初始化之后构建（见 --line-size 注入处）。 */
 
   /* --- layout cascade --- */
   const coverChoices = choices.cover || {};
@@ -285,8 +283,31 @@ function main() {
   }
   if (!vars["--title-size"]) vars["--title-size"] = derived.size;
 
+  // 本地定制（2026-09-18）：每行按字数算一个「撑满 80% 画面宽」的字号，以
+  // --line-size 注入——用**字号**撑满，而不是用 text-align:justify 拉大字间距。
+  // 必须放在 lineUnits()/cjk 初始化之后调用（函数声明会提升，但 cjk 是 const）。
+  // 88 而不是 80：汉字有 side bearing，布局宽 88cqw 时**墨迹**宽度才落在 80% 左右
+  // （实测 4 字行 88cqw → 墨迹 870px/1080 = 80.6%）。
+  const COVER_LINE_FILL_CQW = 88;
+  const coverLineSize = (text) =>
+    `${Math.min(COVER_LINE_FILL_CQW / lineUnits(text), 30).toFixed(2)}cqw`;
+  // 横屏（2026-09-18 用户要求）：两行并排、共用一个字号，整体墨迹宽**不超过画面 70%**。
+  // 按两行总字数反推字号：ink ≈ 0.91 × 行宽之和 + 行间距（汉字 side bearing），
+  // 行间距取模板里的 3cqw。上限 20cqw，避免极短标题被放大到离谱。
+  const LANDSCAPE_INK_CQW = 69;
+  const LANDSCAPE_GAP_CQW = 3;
+  const INK_RATIO = 0.91;
+  const totalUnits = lines.reduce((sum, line) => sum + lineUnits(line), 0);
+  const landscapeSize = `${Math.min((LANDSCAPE_INK_CQW - LANDSCAPE_GAP_CQW) / (INK_RATIO * totalUnits), 20).toFixed(2)}cqw`;
+  const titleHtml = lines
+    .map(
+      (line) =>
+        `<div class="cover-title-line" style="--line-units: ${lineUnits(line).toFixed(2)}; --line-size: ${coverLineSize(line)}; --line-size-landscape: ${landscapeSize}">${emphasize(line)}</div>`,
+    )
+    .join("\n        ");
+
   /* --- fonts --- */
-  const fontFiles = copyFonts(frame, framePath, outputDir, {
+  const fontFiles = copyFonts(frame, fontDir, outputDir, {
     "cover-title": "FONT_COVER_TITLE",
   });
 

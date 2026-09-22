@@ -218,13 +218,47 @@ function syncFile(source, target) {
 }
 
 /**
- * Copy the font files a template needs out of the style preset.
- * `roles` maps a frame.md fonts key to the reserved placeholder that carries
- * its filename, e.g. { "cover-title": "FONT_COVER_TITLE" }.
+ * 把字体目录挂到生成目录旁边（Windows 用目录 Junction，其它平台逐文件同步）。
+ *
+ * 为什么必须放在 HTML 旁边：实测 Chrome 在 `file://` 页面下**拒绝加载跨目录的
+ * 字体**——@font-face 写绝对路径 `file:///E:/…/fonts/优设标题黑.ttf`（编码与不编码
+ * 都试过）都会静默回退成默认字体（实测标题墨迹从 69.5% 变成 74.7%，字形也不对）。
+ * 所以字体必须在 index.html 同级。用 Junction 指回预设：目录能解析、**磁盘上不复制**。
  */
-function copyFonts(frame, framePath, outputDir, roles) {
+function syncFontLink(fontDir, outputDir) {
+  const target = path.join(outputDir, "fonts");
+  let existing = null;
+  try {
+    existing = fs.lstatSync(target);
+  } catch {
+    existing = null;
+  }
+  if (existing) {
+    if (existing.isSymbolicLink() && path.resolve(fs.readlinkSync(target)) === path.resolve(fontDir)) return;
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+  fs.mkdirSync(outputDir, { recursive: true });
+  if (process.platform === "win32") {
+    fs.symlinkSync(fontDir, target, "junction");
+    return;
+  }
+  fs.mkdirSync(target, { recursive: true });
+  for (const entry of fs.readdirSync(fontDir)) {
+    syncFile(path.join(fontDir, entry), path.join(target, entry));
+  }
+}
+
+/**
+ * Resolve the font files a template needs out of the style preset.
+ * `roles` maps a frame.md fonts key to the reserved placeholder that carries
+ * its relative path, e.g. { "cover-title": "FONT_COVER_TITLE" }.
+ *
+ * 占位符填的是 `fonts/xxx.otf`（相对 index.html 的路径），所以模板统一写
+ * `url("{{FONT_X}}")`；字体目录以 Junction 形式落在生成目录里，项目其它地方
+ * （尤其 `工作文件/fonts`）不再出现字体包。
+ */
+function copyFonts(frame, fontDir, outputDir, roles) {
   const fonts = frame.fonts || {};
-  const fontDir = path.join(path.dirname(framePath), "fonts");
   const result = {};
 
   for (const [role, placeholder] of Object.entries(roles)) {
@@ -238,9 +272,9 @@ function copyFonts(frame, framePath, outputDir, roles) {
         "Copy the style preset with kbcut-style --copy-to so fonts/ travels with frame.md.",
       );
     }
-    syncFile(source, path.join(outputDir, "fonts", file));
-    result[placeholder] = file;
+    result[placeholder] = `fonts/${file}`;
   }
+  syncFontLink(fontDir, outputDir);
   return result;
 }
 
@@ -275,7 +309,28 @@ function resolveStyleFiles(choices, args, kind, defaultFile) {
         `cover template; add the missing one to the preset rather than hand-building this video's.`,
     );
   }
-  return { framePath, templatePath };
+
+  // 字体解析目录（本地定制 2026-09-18）：项目里**没有真实字体目录**时回落到风格预设的
+  // fonts/，于是项目内不必存字体副本，模板通过相对路径 fonts/xxx 加载（生成目录里会建
+  // 一个指向预设的 Junction）。只有用户自己往项目里放了**真实**字体目录时才优先用它。
+  // 注意不能把「指向预设的 Junction」当成源：一旦那个 Junction 被删就会悬空（踩过）。
+  const copyFontDir = path.join(path.dirname(framePath), "fonts");
+  let copyIsRealDir = false;
+  try {
+    const st = fs.lstatSync(copyFontDir);
+    copyIsRealDir = st.isDirectory() && !st.isSymbolicLink();
+  } catch {
+    copyIsRealDir = false;
+  }
+  const sourceFrame = args.frame || choices.frame_source || "";
+  const presetFontDir = sourceFrame ? path.join(path.dirname(path.resolve(sourceFrame)), "fonts") : "";
+  const fontDir = copyIsRealDir
+    ? copyFontDir
+    : presetFontDir && fs.existsSync(presetFontDir)
+      ? presetFontDir
+      : copyFontDir;
+
+  return { framePath, templatePath, fontDir };
 }
 
 module.exports = {

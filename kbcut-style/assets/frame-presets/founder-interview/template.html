@@ -35,13 +35,13 @@
     <style>
       @font-face {
         font-family: "FounderBody";
-        src: url("fonts/{{FONT_BODY_NORMAL}}");
+        src: url("{{FONT_BODY_NORMAL}}");
         font-weight: 400;
         font-display: block;
       }
       @font-face {
         font-family: "FounderBody";
-        src: url("fonts/{{FONT_BODY_BOLD}}");
+        src: url("{{FONT_BODY_BOLD}}");
         font-weight: 700;
         font-display: block;
       }
@@ -56,19 +56,19 @@
       }
       @font-face {
         font-family: "HXDCaption";
-        src: url("fonts/{{FONT_CAPTION_NORMAL}}");
+        src: url("{{FONT_CAPTION_NORMAL}}");
         font-weight: 400 700;
         font-display: block;
       }
       @font-face {
         font-family: "TitleSansExtra";
-        src: url("fonts/{{FONT_TITLE_SANS}}");
+        src: url("{{FONT_TITLE_SANS}}");
         font-weight: 100 900;
         font-display: block;
       }
       @font-face {
         font-family: "FounderCoverTitle";
-        src: url("fonts/{{FONT_COVER_TITLE}}");
+        src: url("{{FONT_COVER_TITLE}}");
         font-weight: 400;
         font-display: block;
       }
@@ -153,6 +153,10 @@
         color: #ffffff;
         line-height: 0.98;
         margin: 0;
+        /* 2026-09-18 用户规则：一行放不下时换行（不要一路向右顶到人脸）。
+           换行只发生在各语义段之间（span 保持 nowrap，不切半句）；
+           单段长度由发文规则约束：线 1 每段 ≤10 字、线 2 每段 ≤15 字。 */
+        overflow-wrap: break-word;
       }
 
       #topic-lockup #topic-line-1 {
@@ -224,7 +228,7 @@
       }
 
       #captions-container, #captions-container .caption-line {
-        font-family: "TitleSansExtra", "FounderBody", sans-serif;
+        font-family: "HXDCaption", "FounderBody", sans-serif;
       }
 
       /* Captions overlap rather than stack: hidden siblings must not hold layout. */
@@ -245,7 +249,7 @@
         color: rgba(255, 255, 255, 0.88);
         line-height: 1.2;
         background: none;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 3px rgba(0, 0, 0, 0.55);
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.40), 0 0 3px rgba(0, 0, 0, 0.40);
       }
 
       .chunk {
@@ -337,16 +341,16 @@
           max-width: var(--credentials-max-width);
         }
         /*
-          Portrait caption type: white fill with a thin black outline, replacing
-          the layered drop shadow used before 2026-09-15. paint-order keeps the
-          fill crisp on top of the stroke instead of letting the stroke bleed
-          inward and thin the CJK strokes.
+          字幕字形（2026-09-21 用户两次确认，最高优先）：
+          字体 = 后现代体 `HXDCaption`（不是思源黑体），白色填充 + 40% 透明度深色投影。
+          黑色描边（2026-09-15 ~ 2026-09-21 使用过）已废除；禁止任何
+          `-webkit-text-stroke` / 描边式描字，也禁止改成不透明重投影。
         */
         .caption-line {
           color: #ffffff;
-          -webkit-text-stroke: var(--caption-stroke-width, 0.5cqw) #000000;
-          paint-order: stroke fill;
-          text-shadow: none;
+          -webkit-text-stroke: 0;
+          paint-order: normal;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.40), 0 0 3px rgba(0, 0, 0, 0.40);
         }
       }
     </style>
